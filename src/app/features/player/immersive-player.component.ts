@@ -105,11 +105,19 @@ const SWIPE_THRESHOLD = 60;
         <!-- منوی هنری بالا -->
         <header class="player__header">
           <a
-            class="player__icon-btn"
+            class="player__icon-btn player__back"
             [routerLink]="['/poem', poem.id]"
             aria-label="بازگشت به متن شعر"
           >
-            ‹
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M9 5l7 7-7 7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </a>
 
           <div class="player__titles">
@@ -133,25 +141,51 @@ const SWIPE_THRESHOLD = 60;
             }
           </div>
 
-          <button
-            type="button"
-            class="player__icon-btn player__bookmark"
-            [class.player__bookmark--on]="bookmarked"
-            [attr.aria-pressed]="bookmarked"
-            aria-label="نشان‌کردن این شعر"
-            (click)="toggleBookmark()"
-          >
-            {{ bookmarked ? '★' : '☆' }}
-          </button>
-
-          <button
-            type="button"
-            class="player__icon-btn player__menu"
-            aria-label="فهرست اشعار"
-            (click)="openPicker()"
-          >
-            ☰
-          </button>
+          <div class="player__header-actions">
+            <button
+              type="button"
+              class="player__icon-btn player__menu"
+              aria-label="فهرست اشعار"
+              (click)="openPicker()"
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M4 7h16M4 12h16M4 17h16"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="player__icon-btn player__fullscreen"
+              [attr.aria-label]="isFullscreen ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه'"
+              (click)="toggleFullscreen()"
+            >
+              @if (isFullscreen) {
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M9 4v4a1 1 0 0 1-1 1H4M15 4v4a1 1 0 0 0 1 1h4M9 20v-4a1 1 0 0 0-1-1H4M15 20v-4a1 1 0 0 1 1-1h4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              }
+            </button>
+          </div>
         </header>
 
         <!-- شِوْرون‌های لبه برای سوایپ بین اشعار -->
@@ -162,7 +196,15 @@ const SWIPE_THRESHOLD = 60;
             aria-label="شعر پیشین"
             (click)="goPrevPoem()"
           >
-            ›
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M15 5l-7 7 7 7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </button>
         }
         @if (poem.nextPoem) {
@@ -172,31 +214,48 @@ const SWIPE_THRESHOLD = 60;
             aria-label="شعر بعدی"
             (click)="goNextPoem()"
           >
-            ‹
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M9 5l7 7-7 7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </button>
         }
 
-        <!-- سوییچر خوانش -->
+        <!-- سوییچر خوانش (روکش مودال با اسکرول داخلی) -->
         @if (recSheetOpen && poem.recitations.length > 0) {
-          <div class="player__rec-sheet" role="menu" dir="rtl">
-            <p class="player__rec-heading">انتخاب خوانش</p>
-            @for (rec of poem.recitations; track rec.id) {
-              <button
-                type="button"
-                class="player__rec-option"
-                role="menuitemradio"
-                [class.player__rec-option--active]="rec === recitation"
-                [attr.aria-checked]="rec === recitation"
-                (click)="selectRecitation(rec)"
-              >
-                <span class="player__rec-artist">{{
-                  rec.audioArtist || 'خوانندهٔ نامشخص'
-                }}</span>
-                @if (rec.audioTitle) {
-                  <span class="player__rec-title">{{ rec.audioTitle }}</span>
+          <div class="player__rec-overlay" (click)="closeRecSheet()">
+            <div
+              class="player__rec-sheet"
+              role="menu"
+              dir="rtl"
+              (click)="$event.stopPropagation()"
+            >
+              <p class="player__rec-heading">انتخاب خوانش</p>
+              <div class="player__rec-list">
+                @for (rec of poem.recitations; track rec.id) {
+                  <button
+                    type="button"
+                    class="player__rec-option"
+                    role="menuitemradio"
+                    [class.player__rec-option--active]="rec === recitation"
+                    [attr.aria-checked]="rec === recitation"
+                    (click)="selectRecitation(rec)"
+                  >
+                    <span class="player__rec-artist">{{
+                      rec.audioArtist || 'خوانندهٔ نامشخص'
+                    }}</span>
+                    @if (rec.audioTitle) {
+                      <span class="player__rec-title">{{ rec.audioTitle }}</span>
+                    }
+                  </button>
                 }
-              </button>
-            }
+              </div>
+            </div>
           </div>
         }
 
@@ -213,15 +272,13 @@ const SWIPE_THRESHOLD = 60;
 
         <!-- ستون متن همگام (کارائوکه‌وار: بیت فعال در نقطهٔ کانونی، بقیه محو) -->
         <div class="player__lyrics" #lyrics>
-          <div
-            class="player__lyrics-track"
-            [style.transform]="'translateY(' + trackOffset + 'px)'"
-          >
+          <div class="player__lyrics-track">
             @for (verse of lyricVerses; track verse.vOrder; let i = $index) {
               <p
                 class="player__verse"
                 [class.player__verse--active]="i === currentVerseIndex"
                 [class.player__verse--near]="isNear(i)"
+                [class.player__verse--hidden]="!isVisible(i)"
                 [style.opacity]="verseOpacity(i)"
                 #verseEl
                 (click)="seekToVerse(i)"
@@ -264,44 +321,65 @@ const SWIPE_THRESHOLD = 60;
             </div>
 
             <div class="player__controls">
-              <button
-                type="button"
-                class="player__ctrl"
-                aria-label="بیت پیشین"
-                (click)="previousVerse()"
-              >
-                ⏮
-              </button>
-              <button
-                type="button"
-                class="player__ctrl player__ctrl--play"
-                [attr.aria-label]="isPlaying ? 'توقف' : 'پخش'"
-                (click)="togglePlay()"
-              >
-                {{ isPlaying ? '⏸' : '▶' }}
-              </button>
-              <button
-                type="button"
-                class="player__ctrl"
-                aria-label="بیت بعدی"
-                (click)="nextVerse()"
-              >
-                ⏭
-              </button>
-
-              <label class="player__speed">
-                <span class="player__speed-label">سرعت</span>
-                <select
-                  class="player__speed-select"
-                  aria-label="سرعت پخش"
-                  [value]="playbackRate"
-                  (change)="onSpeedChange($event)"
+              <!-- کنترل‌های انتقال (قبلی/پخش/بعدی) به‌صورت LTR و مرکزچین -->
+              <div class="player__transport" dir="ltr">
+                <button
+                  type="button"
+                  class="player__ctrl"
+                  aria-label="بیت پیشین"
+                  (click)="previousVerse()"
                 >
-                  @for (s of speedOptions; track s) {
-                    <option [value]="s">{{ s }}×</option>
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path
+                      d="M7 6a1 1 0 0 1 2 0v12a1 1 0 0 1-2 0zM19 6.5v11a1 1 0 0 1-1.6.8l-7-5.5a1 1 0 0 1 0-1.6l7-5.5A1 1 0 0 1 19 6.5z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="player__ctrl player__ctrl--play"
+                  [attr.aria-label]="playLabel"
+                  (click)="togglePlay()"
+                >
+                  @if (hasEnded) {
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M3 12a9 9 0 1 1 3 6.7" />
+                      <path d="M3 21v-5h5" />
+                    </svg>
+                  } @else if (isPlaying) {
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <rect x="7" y="5" width="3.6" height="14" rx="1.1" />
+                      <rect x="13.4" y="5" width="3.6" height="14" rx="1.1" />
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path
+                        d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"
+                      />
+                    </svg>
                   }
-                </select>
-              </label>
+                </button>
+                <button
+                  type="button"
+                  class="player__ctrl"
+                  aria-label="بیت بعدی"
+                  (click)="nextVerse()"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path
+                      d="M17 6a1 1 0 0 1 2 0v12a1 1 0 0 1-2 0zM5 6.5v11a1 1 0 0 0 1.6.8l7-5.5a1 1 0 0 0 0-1.6l-7-5.5A1 1 0 0 0 5 6.5z"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         } @else {
@@ -325,6 +403,8 @@ const SWIPE_THRESHOLD = 60;
       :host {
         display: block;
         height: 100%;
+        flex: 1 1 auto;
+        min-height: 0;
       }
 
       /* تم تیره مستقل از تم روشن برنامه */
@@ -341,19 +421,14 @@ const SWIPE_THRESHOLD = 60;
         color: #f8f5ec;
         background-color: #0f172a;
         background-image: radial-gradient(
-            60% 50% at 50% 0%,
-            rgba(212, 175, 55, 0.14),
+            55% 42% at 50% 0%,
+            rgba(212, 175, 55, 0.12),
             transparent 70%
           ),
           radial-gradient(
-            70% 60% at 80% 100%,
-            rgba(56, 60, 110, 0.4),
-            transparent 75%
-          ),
-          radial-gradient(
-            60% 55% at 10% 90%,
-            rgba(212, 175, 55, 0.06),
-            transparent 70%
+            95% 45% at 50% 116%,
+            rgba(56, 60, 110, 0.22),
+            transparent 72%
           );
         font-family: Vazirmatn, system-ui, sans-serif;
         touch-action: pan-y;
@@ -397,13 +472,27 @@ const SWIPE_THRESHOLD = 60;
         z-index: 2;
         width: 100%;
         max-width: 38rem;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: start;
+        gap: 0.5rem;
+      }
+
+      .player__back {
+        grid-column: 1;
+        justify-self: start;
+      }
+
+      .player__header-actions {
+        grid-column: 3;
+        justify-self: end;
         display: flex;
-        align-items: flex-start;
+        flex-direction: column;
         gap: 0.5rem;
       }
 
       .player__titles {
-        flex: 1 1 auto;
+        grid-column: 2;
         min-width: 0;
         text-align: center;
         display: flex;
@@ -493,14 +582,26 @@ const SWIPE_THRESHOLD = 60;
         transform: translateY(-1px);
       }
 
-      .player__bookmark--on {
-        color: #d4af37;
-        border-color: #d4af37;
-        box-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
+      .player__icon-btn:active {
+        transform: scale(0.92);
       }
 
       .player__menu {
         font-size: 1.2rem;
+      }
+
+      /* آیکون‌های SVG دقیقاً وسطِ دایره می‌نشینند. */
+      .player__icon-btn svg,
+      .player__chevron svg,
+      .player__ctrl svg {
+        width: 1.25rem;
+        height: 1.25rem;
+        display: block;
+      }
+
+      .player__ctrl--play svg {
+        width: 1.6rem;
+        height: 1.6rem;
       }
 
       /* ---- شِوْرون‌های سوایپ بین اشعار ---- */
@@ -538,21 +639,40 @@ const SWIPE_THRESHOLD = 60;
         inset-inline-start: 0.4rem;
       }
 
-      /* ---- شیت سوییچر خوانش ---- */
+      /* ---- شیت سوییچر خوانش (روکش مودال + اسکرول داخلی) ---- */
+      .player__rec-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 5rem 1rem 1.25rem;
+        background: rgba(5, 7, 15, 0.55);
+        backdrop-filter: blur(3px);
+        animation: recFade 160ms ease both;
+      }
+
       .player__rec-sheet {
-        position: relative;
-        z-index: 3;
-        width: 100%;
-        max-width: 22rem;
+        width: min(22rem, 100%);
+        max-height: 100%;
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
-        padding: 0.7rem;
+        gap: 0.5rem;
+        padding: 0.85rem;
         background: linear-gradient(180deg, #131c33, #0f172a);
         border: 1px solid rgba(212, 175, 55, 0.3);
-        border-radius: 16px;
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-        animation: recFade 180ms ease both;
+        border-radius: 18px;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+      }
+
+      .player__rec-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
       .player__rec-heading {
@@ -680,36 +800,24 @@ const SWIPE_THRESHOLD = 60;
         flex: 1 1 auto;
         min-height: 0;
         overflow: hidden;
-        /* محو لبه‌های بالا و پایین تا ابیات دور به‌نرمی ناپدید شوند */
-        -webkit-mask-image: linear-gradient(
-          to bottom,
-          transparent 0,
-          #000 16%,
-          #000 74%,
-          transparent 100%
-        );
-        mask-image: linear-gradient(
-          to bottom,
-          transparent 0,
-          #000 16%,
-          #000 74%,
-          transparent 100%
-        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
-      /* ریلِ متحرکِ ابیات؛ با translateY طوری جابه‌جا می‌شود که بیت فعال
-         روی نقطهٔ کانونی بنشیند. */
+      /* فقط سه بیتِ نمایان (قبلی/جاری/بعدی) به‌صورت مرکزچین. */
       .player__lyrics-track {
-        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.9rem;
         width: 100%;
         text-align: center;
         padding: 0 0.5rem;
-        will-change: transform;
-        transition: transform 550ms cubic-bezier(0.22, 0.61, 0.36, 1);
+      }
+
+      .player__verse--hidden {
+        display: none;
       }
 
       .player__verse {
@@ -752,11 +860,11 @@ const SWIPE_THRESHOLD = 60;
         padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
         background: linear-gradient(
           to top,
-          rgba(15, 23, 42, 0.98),
-          rgba(15, 23, 42, 0.82)
+          #0f172a 0%,
+          #0f172a 65%,
+          rgba(15, 23, 42, 0.94) 100%
         );
-        backdrop-filter: blur(8px);
-        border-top: 1px solid rgba(212, 175, 55, 0.25);
+        border-top: 1px solid rgba(212, 175, 55, 0.22);
       }
 
       .player__seek-row {
@@ -806,58 +914,53 @@ const SWIPE_THRESHOLD = 60;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 1rem;
+      }
+
+      /* گروهِ انتقال (قبلی/پخش/بعدی) مرکزچین، LTR برای ترتیب استاندارد. */
+      .player__transport {
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
       }
 
       .player__ctrl {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 2.6rem;
-        height: 2.6rem;
-        font-size: 1.1rem;
+        width: 2.7rem;
+        height: 2.7rem;
+        font-size: 1.05rem;
         color: #f8f5ec;
-        background: rgba(248, 245, 236, 0.06);
-        border: 1px solid rgba(212, 175, 55, 0.25);
+        background: rgba(248, 245, 236, 0.07);
+        border: 1px solid rgba(212, 175, 55, 0.28);
         border-radius: 999px;
         cursor: pointer;
-        transition: background 150ms ease, transform 150ms ease;
+        transition: background 150ms ease, transform 120ms ease,
+          border-color 150ms ease;
       }
 
       .player__ctrl:hover {
-        background: rgba(212, 175, 55, 0.16);
+        background: rgba(212, 175, 55, 0.18);
+        border-color: rgba(212, 175, 55, 0.5);
+      }
+
+      .player__ctrl:active {
+        transform: scale(0.92);
       }
 
       .player__ctrl--play {
-        width: 3.2rem;
-        height: 3.2rem;
-        font-size: 1.35rem;
+        width: 3.5rem;
+        height: 3.5rem;
+        font-size: 1.5rem;
         color: #0f172a;
         background: linear-gradient(135deg, #e3c75a, #d4af37);
         border-color: transparent;
-        box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.45);
       }
 
-      .player__speed {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        margin-inline-start: 0.4rem;
-      }
-
-      .player__speed-label {
-        font-size: 0.72rem;
-        color: rgba(248, 245, 236, 0.6);
-      }
-
-      .player__speed-select {
-        font: inherit;
-        font-size: 0.8rem;
-        color: #f8f5ec;
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid rgba(212, 175, 55, 0.3);
-        border-radius: 8px;
-        padding: 0.2rem 0.4rem;
+      .player__ctrl--play:hover {
+        background: linear-gradient(135deg, #ecd16a, #d9b53a);
+        transform: translateY(-1px);
       }
 
       /* ---- نبودِ خوانش صوتی ---- */
@@ -1017,11 +1120,14 @@ export class ImmersivePlayerComponent implements OnInit {
   /** آیا صوت در حال پخش است. */
   isPlaying = false;
 
+  /** آیا پخش تا انتها رسیده است (برای نمایش آیکونِ «پخش از ابتدا»). */
+  hasEnded = false;
+
   /** سرعت پخش جاری. */
   playbackRate = 1;
 
-  /** وضعیت نشانک (محلی، بدون ماندگاری). */
-  bookmarked = false;
+  /** وضعیت تمام‌صفحه (Fullscreen). */
+  isFullscreen = false;
 
   /** آیا شیت سوییچر خوانش باز است. */
   recSheetOpen = false;
@@ -1101,6 +1207,22 @@ export class ImmersivePlayerComponent implements OnInit {
     }
     const pct = (this.currentTime / this.duration) * 100;
     return Math.min(100, Math.max(0, pct));
+  }
+
+  /** آیکون دکمهٔ پخش: پخش/توقف/پخش از ابتدا. */
+  get playIcon(): string {
+    if (this.hasEnded) {
+      return '↻';
+    }
+    return this.isPlaying ? '⏸' : '▶';
+  }
+
+  /** برچسب دسترس‌پذیریِ دکمهٔ پخش. */
+  get playLabel(): string {
+    if (this.hasEnded) {
+      return 'پخش از ابتدا';
+    }
+    return this.isPlaying ? 'توقف' : 'پخش';
   }
 
   /** تلاش مجدد واکشی شعر جاری (یا شعر پیش‌فرض خانه). */
@@ -1217,6 +1339,12 @@ export class ImmersivePlayerComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
+  /** بستن شیت سوییچر خوانش (با کلیک روی پس‌زمینه). */
+  closeRecSheet(): void {
+    this.recSheetOpen = false;
+    this.cdr.markForCheck();
+  }
+
   /**
    * انتخاب یک خوانش: تعویض خوانش فعال، تعویض منبع صوت، بازنشانی زمان به صفر و
    * محاسبهٔ مجدد زمان‌بندی در نخستین `loadedmetadata` بعدی.
@@ -1235,6 +1363,7 @@ export class ImmersivePlayerComponent implements OnInit {
     this.currentTime = 0;
     this.duration = 0;
     this.isPlaying = false;
+    this.hasEnded = false;
 
     // تعویض منبع و بازنشانی عنصر صوت. اتصال [src] منبع را به‌روزرسانی می‌کند؛
     // load() اطمینان می‌دهد متادیتای جدید دوباره خوانده شود.
@@ -1304,6 +1433,7 @@ export class ImmersivePlayerComponent implements OnInit {
 
   onPlay(): void {
     this.isPlaying = true;
+    this.hasEnded = false;
     this.cdr.markForCheck();
   }
 
@@ -1314,6 +1444,7 @@ export class ImmersivePlayerComponent implements OnInit {
 
   onEnded(): void {
     this.isPlaying = false;
+    this.hasEnded = true;
     this.cdr.markForCheck();
   }
 
@@ -1322,12 +1453,20 @@ export class ImmersivePlayerComponent implements OnInit {
   // -------------------------------------------------------------------------
 
   /** پخش/توقف خوانش. */
+  /** پخش/توقف خوانش (و پخش از ابتدا اگر به انتها رسیده باشد). */
   togglePlay(): void {
     const el = this.audioRef?.nativeElement;
     if (!el) {
       return;
     }
     if (el.paused) {
+      // اگر پخش تمام شده، از ابتدا آغاز کن.
+      if (this.hasEnded || el.ended) {
+        el.currentTime = 0;
+        this.currentTime = 0;
+        this.currentVerseIndex = 0;
+        this.hasEnded = false;
+      }
       void el.play().catch(() => {
         /* نادیده گرفتن خطای پخش */
       });
@@ -1382,9 +1521,44 @@ export class ImmersivePlayerComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  /** تغییر وضعیت نشانک (محلی). */
-  toggleBookmark(): void {
-    this.bookmarked = !this.bookmarked;
+  /**
+   * ورود/خروج از حالت تمام‌صفحه با Fullscreen API (با پشتیبانی از پیشوند webkit).
+   * در محیط‌هایی که پشتیبانی نمی‌شود (مثل برخی مرورگرهای iOS) بی‌صدا نادیده
+   * گرفته می‌شود؛ در آن موارد «افزودن به صفحهٔ اصلی» تجربهٔ تمام‌صفحه می‌دهد.
+   */
+  toggleFullscreen(): void {
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => void;
+    };
+    const el = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => void;
+    };
+    const active = doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+
+    if (!active) {
+      const request =
+        el.requestFullscreen?.bind(el) ?? el.webkitRequestFullscreen?.bind(el);
+      if (request) {
+        try {
+          void request();
+        } catch {
+          /* نادیده گرفتن خطای عدم پشتیبانی */
+        }
+      }
+      this.isFullscreen = true;
+    } else {
+      const exit =
+        doc.exitFullscreen?.bind(doc) ?? doc.webkitExitFullscreen?.bind(doc);
+      if (exit) {
+        try {
+          void exit();
+        } catch {
+          /* نادیده گرفتن خطا */
+        }
+      }
+      this.isFullscreen = false;
+    }
     this.cdr.markForCheck();
   }
 
@@ -1401,6 +1575,11 @@ export class ImmersivePlayerComponent implements OnInit {
   /** آیا این بیت بلافاصله مجاور بیت فعال است (کمی روشن‌تر نمایش داده می‌شود). */
   isNear(index: number): boolean {
     return Math.abs(index - this.currentVerseIndex) === 1;
+  }
+
+  /** آیا این بیت باید نمایش داده شود: تنها بیت جاری و یک بیت قبل/بعد. */
+  isVisible(index: number): boolean {
+    return Math.abs(index - this.currentVerseIndex) <= 1;
   }
 
   /** شفافیت هر بیت: فقط بیت جاری و یک بیت قبل/بعد دیده می‌شوند؛ بقیه پنهان. */
@@ -1424,6 +1603,7 @@ export class ImmersivePlayerComponent implements OnInit {
       el.currentTime = clamped;
     }
     this.currentTime = clamped;
+    this.hasEnded = false;
     this.currentVerseIndex = Math.max(
       0,
       findCurrentVerseIndex(this.timings, clamped),
@@ -1500,6 +1680,7 @@ export class ImmersivePlayerComponent implements OnInit {
     this.isPlaying = false;
     this.recSheetOpen = false;
     this.trackOffset = 0;
+    this.hasEnded = false;
     this.loading = false;
     this.error = null;
     this.cdr.markForCheck();

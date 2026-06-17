@@ -229,22 +229,6 @@ describe('ImmersivePlayerComponent', () => {
     expect(component.currentTime).toBe(0);
   });
 
-  it('should toggle the bookmark state', () => {
-    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
-    component.id = '8';
-    fixture.detectChanges();
-
-    expect(component.bookmarked).toBeFalse();
-    const btn = fixture.nativeElement.querySelector(
-      '.player__bookmark',
-    ) as HTMLButtonElement;
-    btn.click();
-    fixture.detectChanges();
-
-    expect(component.bookmarked).toBeTrue();
-    expect(btn.getAttribute('aria-pressed')).toBe('true');
-  });
-
   it('should show the Persian empty message and still render verses when no recitation', () => {
     ganjoorSpy.getPoem.and.returnValue(of(makePoem({ recitations: [] })));
 

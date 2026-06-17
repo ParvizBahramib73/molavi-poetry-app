@@ -67,7 +67,15 @@ interface PickerLevel {
                 aria-label="بازگشت"
                 (click)="goBack()"
               >
-                ‹
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M9 5l7 7-7 7"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </button>
             } @else {
               <span class="picker__back picker__back--spacer" aria-hidden="true"></span>
@@ -79,7 +87,14 @@ interface PickerLevel {
               aria-label="بستن"
               (click)="close()"
             >
-              ✕
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
             </button>
           </header>
 
@@ -101,7 +116,17 @@ interface PickerLevel {
                       (click)="openCategory(cat)"
                     >
                       <span class="picker__row-text">{{ cat.title }}</span>
-                      <span class="picker__chev" aria-hidden="true">‹</span>
+                      <span class="picker__chev" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none">
+                          <path
+                            d="M15 5l-7 7 7 7"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </span>
                     </button>
                   </li>
                 }
@@ -276,8 +301,24 @@ interface PickerLevel {
       .picker__chev,
       .picker__play {
         flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         color: rgba(212, 175, 55, 0.85);
         font-size: 0.85rem;
+      }
+
+      .picker__back svg,
+      .picker__close svg {
+        width: 1.05rem;
+        height: 1.05rem;
+        display: block;
+      }
+
+      .picker__chev svg {
+        width: 0.95rem;
+        height: 0.95rem;
+        display: block;
       }
 
       .picker__empty {

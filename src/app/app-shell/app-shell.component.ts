@@ -84,6 +84,8 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
         max-width: 430px;
         min-height: 100vh;
         min-height: 100dvh;
+        height: 100vh;
+        height: 100dvh;
         margin-inline: auto;
         display: flex;
         flex-direction: column;
@@ -127,6 +129,8 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
         flex: 1 1 auto;
         width: 100%;
         min-height: 0;
+        display: flex;
+        flex-direction: column;
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
