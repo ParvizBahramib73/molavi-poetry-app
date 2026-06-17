@@ -63,7 +63,9 @@ describe('ImmersivePlayerComponent', () => {
   beforeEach(async () => {
     ganjoorSpy = jasmine.createSpyObj<GanjoorService>('GanjoorService', [
       'getPoem',
+      'getRecitationSync',
     ]);
+    ganjoorSpy.getRecitationSync.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [ImmersivePlayerComponent],

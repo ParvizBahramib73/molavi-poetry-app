@@ -110,6 +110,16 @@ export interface Language {
   code: string;
 }
 
+/**
+ * یک ردیف از داده‌ی همگام‌سازیِ دقیقِ گنجور برای یک خوانش.
+ * `verseOrder` با `vOrder` ابیات هم‌تراز است (و `verseOrder = 0` عنوان شعر است).
+ */
+export interface VerseSync {
+  verseOrder: number;
+  /** زمان شروع این بیت در فایل صوتی، برحسب میلی‌ثانیه. */
+  audioStartMs: number;
+}
+
 /** یک صفحه از نتایج جست‌وجو (همگی در دامنهٔ مولوی). */
 export interface SearchResultPage {
   term: string;

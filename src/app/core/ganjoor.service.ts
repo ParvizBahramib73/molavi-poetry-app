@@ -38,6 +38,7 @@ import {
   SearchResultPage,
   Translation,
   TranslationVerse,
+  VerseSync,
 } from '../models';
 import { buildScopedUrl } from './build-scoped-url';
 import { withGanjoorErrorHandling } from './http-operators';
@@ -273,6 +274,38 @@ export class GanjoorService {
             id: lang.id ?? 0,
             name: lang.name ?? '',
             code: lang.code ?? '',
+          })),
+        ),
+        withGanjoorErrorHandling(),
+      );
+  }
+
+  /**
+   * دریافت داده‌ی همگام‌سازیِ دقیقِ بیت‌به‌بیت برای یک خوانش.
+   *
+   * Endpoint: `GET /api/audio/verses/{recitationId}` که آرایه‌ای از
+   * `{ verseOrder, verseText, audioStartMilliseconds }` بازمی‌گرداند. این داده
+   * زمانِ واقعیِ شروع هر بیت در فایل صوتی است (شاملِ توضیحات/موزیک میانی) و
+   * برای همگام‌سازیِ دقیق متن با خوانش استفاده می‌شود. برای خوانش‌های فاقد
+   * همگام‌سازی ممکن است آرایهٔ خالی یا بدون زمانِ معتبر بازگردد.
+   *
+   * Requirements: 3.1, 6.1
+   */
+  getRecitationSync(recitationId: number): Observable<VerseSync[]> {
+    const url = buildScopedUrl(`/api/audio/verses/${recitationId}`);
+
+    return this.http
+      .get<
+        Array<{
+          verseOrder?: number;
+          audioStartMilliseconds?: number;
+        }>
+      >(url)
+      .pipe(
+        map((raw) =>
+          (raw ?? []).map((s) => ({
+            verseOrder: s?.verseOrder ?? 0,
+            audioStartMs: s?.audioStartMilliseconds ?? 0,
           })),
         ),
         withGanjoorErrorHandling(),

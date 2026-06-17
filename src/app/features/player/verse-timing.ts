@@ -103,3 +103,64 @@ export function formatTime(seconds: number): string {
   const secs = total % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
+
+/** یک ردیف از داده‌ی همگام‌سازیِ دقیقِ گنجور (زمان شروع هر بیت). */
+export interface SyncEntry {
+  /** شمارهٔ بیت؛ با vOrder ابیات هم‌تراز است (۰ = عنوان شعر). */
+  verseOrder: number;
+  /** زمان شروع بیت در فایل صوتی، برحسب میلی‌ثانیه. */
+  audioStartMs: number;
+}
+
+/**
+ * آیا داده‌ی همگام‌سازی قابل‌استفاده (دقیق) است؟
+ *
+ * تنها در صورتی «دقیق» تلقی می‌شود که دست‌کم یک ردیف وجود داشته باشد و
+ * حداقل یک زمانِ شروعِ بزرگ‌تر از صفر داشته باشیم (تا خوانش‌های فاقد همگام‌سازی
+ * واقعی به‌اشتباه دقیق در نظر گرفته نشوند).
+ */
+export function hasUsableSync(sync: SyncEntry[] | null | undefined): boolean {
+  if (!sync || sync.length === 0) {
+    return false;
+  }
+  return sync.some(
+    (s) => Number.isFinite(s?.audioStartMs) && s.audioStartMs > 0,
+  );
+}
+
+/**
+ * ساخت زمان‌بندیِ دقیقِ ابیات (ثانیه) از روی داده‌ی همگام‌سازیِ گنجور.
+ *
+ * هر بیت با `vOrder` به ردیفِ متناظر در `sync` (با `verseOrder === vOrder`)
+ * نگاشت می‌شود. اگر بیتی در داده‌ی sync نباشد، زمانِ بیتِ پیشین حفظ می‌شود تا
+ * خروجی همواره غیرنزولی بماند. خروجی هم‌طول با `verses` است.
+ *
+ * این تابع خالص است و به Angular وابسته نیست.
+ */
+export function buildTimingsFromSync(
+  verses: { vOrder: number }[],
+  sync: SyncEntry[],
+): number[] {
+  const map = new Map<number, number>();
+  for (const s of sync ?? []) {
+    if (
+      typeof s?.verseOrder === 'number' &&
+      Number.isFinite(s?.audioStartMs)
+    ) {
+      map.set(s.verseOrder, Math.max(0, s.audioStartMs / 1000));
+    }
+  }
+
+  const timings: number[] = [];
+  let prev = 0;
+  for (let i = 0; i < verses.length; i++) {
+    const v = verses[i]?.vOrder;
+    let t = map.has(v) ? (map.get(v) as number) : prev;
+    if (!Number.isFinite(t) || t < prev) {
+      t = prev;
+    }
+    timings.push(t);
+    prev = t;
+  }
+  return timings;
+}

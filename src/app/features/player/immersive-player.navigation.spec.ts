@@ -60,7 +60,9 @@ describe('ImmersivePlayerComponent — استوری‌وار (پیش‌فرض/خ
       'getPoemByUrl',
       'getPoet',
       'getCategory',
+      'getRecitationSync',
     ]);
+    ganjoorSpy.getRecitationSync.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [ImmersivePlayerComponent],
@@ -162,5 +164,32 @@ describe('ImmersivePlayerComponent — استوری‌وار (پیش‌فرض/خ
     component.onPointerUp({ clientX: 200, clientY: 205 } as PointerEvent);
 
     expect(navSpy).toHaveBeenCalledWith(['/poem', 9, 'listen']);
+  });
+
+  it('با داده‌ی همگام‌سازیِ دقیق، زمان‌بندی از sync ساخته می‌شود و تخمین آن را بازنویسی نمی‌کند', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    // verseOrder 0 = عنوان؛ vOrder 1 و 2 ابیات.
+    ganjoorSpy.getRecitationSync.and.returnValue(
+      of([
+        { verseOrder: 0, audioStartMs: 0 },
+        { verseOrder: 1, audioStartMs: 5000 },
+        { verseOrder: 2, audioStartMs: 12000 },
+      ]),
+    );
+
+    component.id = '8';
+    fixture.detectChanges();
+
+    expect(component.exactSync).toBeTrue();
+    expect(component.timings[0]).toBeCloseTo(5, 3);
+    expect(component.timings[1]).toBeCloseTo(12, 3);
+
+    // onLoadedMetadata نباید زمان‌بندیِ دقیق را با تخمین جایگزین کند.
+    component.audioRef = new ElementRef({ duration: 120 } as HTMLAudioElement);
+    component.onLoadedMetadata();
+
+    expect(component.exactSync).toBeTrue();
+    expect(component.timings[0]).toBeCloseTo(5, 3);
+    expect(component.timings[1]).toBeCloseTo(12, 3);
   });
 });

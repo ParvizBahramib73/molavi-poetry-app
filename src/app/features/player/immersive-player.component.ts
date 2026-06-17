@@ -18,9 +18,11 @@ import { ErrorStateComponent } from '../../shared/error-state/error-state.compon
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator.component';
 import { PoemPickerComponent } from './poem-picker.component';
 import {
+  buildTimingsFromSync,
   computeVerseTimings,
   findCurrentVerseIndex,
   formatTime,
+  hasUsableSync,
 } from './verse-timing';
 
 /** گزینه‌های سرعت پخش در دسترس. */
@@ -1003,6 +1005,9 @@ export class ImmersivePlayerComponent implements OnInit {
   /** جابه‌جایی عمودی ریل ابیات (px) برای نشاندن بیت فعال روی نقطهٔ کانونی. */
   trackOffset = 0;
 
+  /** آیا زمان‌بندیِ جاری از داده‌ی دقیقِ همگام‌سازیِ گنجور آمده است. */
+  exactSync = false;
+
   /** زمان جاری پخش (ثانیه). */
   currentTime = 0;
 
@@ -1041,6 +1046,9 @@ export class ImmersivePlayerComponent implements OnInit {
 
   /** مختصات عمودی آغاز سوایپ. */
   private pointerStartY = 0;
+
+  /** اشتراک جاریِ دریافت داده‌ی همگام‌سازی (برای لغو هنگام تعویض خوانش/شعر). */
+  private syncSub?: { unsubscribe(): void };
 
   @ViewChild('audio') audioRef?: ElementRef<HTMLAudioElement>;
   @ViewChild('lyrics') lyricsRef?: ElementRef<HTMLElement>;
@@ -1222,6 +1230,7 @@ export class ImmersivePlayerComponent implements OnInit {
 
     // بازنشانی وضعیت پخش برای خوانش جدید.
     this.timings = [];
+    this.exactSync = false;
     this.currentVerseIndex = 0;
     this.currentTime = 0;
     this.duration = 0;
@@ -1236,6 +1245,8 @@ export class ImmersivePlayerComponent implements OnInit {
         el.load();
       }
     }
+    // دریافت زمان‌بندیِ دقیقِ خوانشِ جدید.
+    this.loadSync();
     this.cdr.markForCheck();
   }
 
@@ -1263,7 +1274,10 @@ export class ImmersivePlayerComponent implements OnInit {
   onLoadedMetadata(): void {
     const el = this.audioRef?.nativeElement;
     this.duration = el && Number.isFinite(el.duration) ? el.duration : 0;
-    this.timings = computeVerseTimings(this.lyricVerses, this.duration);
+    // اگر زمان‌بندیِ دقیقِ گنجور موجود است، آن را حفظ کن؛ وگرنه تخمین بزن.
+    if (!this.exactSync) {
+      this.timings = computeVerseTimings(this.lyricVerses, this.duration);
+    }
     // اعمال سرعت پخش انتخابی بر عنصر صوت.
     if (el) {
       el.playbackRate = this.playbackRate;
@@ -1479,6 +1493,7 @@ export class ImmersivePlayerComponent implements OnInit {
     this.recitation = this.pickRecitation(poem.recitations);
     // بازنشانی وضعیت پخش برای شعر جدید.
     this.timings = [];
+    this.exactSync = false;
     this.currentVerseIndex = 0;
     this.currentTime = 0;
     this.duration = 0;
@@ -1489,6 +1504,8 @@ export class ImmersivePlayerComponent implements OnInit {
     this.error = null;
     this.cdr.markForCheck();
     this.scheduleFocal();
+    // تلاش برای دریافت زمان‌بندیِ دقیقِ همگام‌سازی از گنجور.
+    this.loadSync();
   }
 
   /** اعمال خطای واکشی. */
@@ -1507,5 +1524,38 @@ export class ImmersivePlayerComponent implements OnInit {
       return recitations[this.recIndex];
     }
     return recitations[0];
+  }
+
+  /**
+   * تلاش برای دریافت زمان‌بندیِ دقیقِ همگام‌سازی از گنجور
+   * (`GET /api/audio/verses/{id}`). اگر داده‌ی معتبر بود، زمان‌بندیِ تخمینی با
+   * زمان‌بندیِ دقیق جایگزین می‌شود؛ در غیر این صورت تخمین (که در
+   * {@link onLoadedMetadata} محاسبه می‌شود) باقی می‌ماند. خطاها بی‌صدا نادیده
+   * گرفته می‌شوند تا تجربهٔ پخش مختل نشود.
+   */
+  private loadSync(): void {
+    this.exactSync = false;
+    const rec = this.recitation;
+    if (!rec) {
+      return;
+    }
+    this.syncSub?.unsubscribe();
+    this.syncSub = this.ganjoor.getRecitationSync(rec.id).subscribe({
+      next: (sync) => {
+        if (hasUsableSync(sync)) {
+          this.timings = buildTimingsFromSync(this.lyricVerses, sync);
+          this.exactSync = true;
+          this.currentVerseIndex = Math.max(
+            0,
+            findCurrentVerseIndex(this.timings, this.currentTime),
+          );
+          this.scheduleFocal();
+          this.cdr.markForCheck();
+        }
+      },
+      error: () => {
+        this.exactSync = false;
+      },
+    });
   }
 }
