@@ -824,14 +824,20 @@ const SWIPE_THRESHOLD = 60;
 
       .player__verse {
         margin: 0;
-        padding: 0.3rem 0.5rem;
-        font-size: 1.05rem;
-        line-height: 2.1;
+        padding: 0.3rem 0.6rem;
+        font-size: 1.28rem;
+        line-height: 1.9;
+        font-weight: 600;
         color: #f8f5ec;
-        transform: scale(0.96);
+        /* همه با اندازهٔ «بزرگ» چیده می‌شوند؛ همسایه‌ها کوچک‌نمایی می‌شوند
+           (scale<1 هرگز کناره‌ها را نمی‌بُرد) و بیت فعال در اندازهٔ طبیعی
+           (scale 1) است؛ چون font-size ثابت است نه پرش رخ می‌دهد نه برش. */
+        transform: scale(0.82);
+        transform-origin: center;
         cursor: pointer;
-        transition: opacity 450ms ease, transform 450ms ease, color 450ms ease,
-          text-shadow 450ms ease, font-size 350ms ease;
+        transition: opacity 400ms ease, transform 400ms ease, color 400ms ease,
+          text-shadow 400ms ease;
+        will-change: transform;
       }
 
       .player__verse--near {
@@ -839,9 +845,7 @@ const SWIPE_THRESHOLD = 60;
       }
 
       .player__verse--active {
-        transform: scale(1.08);
-        font-size: 1.32rem;
-        font-weight: 700;
+        transform: scale(1);
         color: #fffdf5;
         text-shadow: 0 0 18px rgba(212, 175, 55, 0.6),
           0 0 6px rgba(212, 175, 55, 0.45);
@@ -849,13 +853,12 @@ const SWIPE_THRESHOLD = 60;
 
       /* ---- نوار کنترل پایین (فیکس در پایین صفحه، هم‌عرض قاب گوشی) ---- */
       .player__bar {
-        position: fixed;
+        position: absolute;
         z-index: 20;
         bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
+        left: 0;
+        right: 0;
         width: 100%;
-        max-width: 430px;
         display: flex;
         flex-direction: column;
         gap: 0.6rem;
