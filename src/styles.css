@@ -1,0 +1,207 @@
+/* استایل سراسری اپلیکیشن شعر مولوی — راست‌به‌چپ و واکنش‌گرا (R7.1, R7.4) */
+/* زبان طراحی: «نسخهٔ خطی فارسی» تلفیق‌شده با مدرنیتهٔ نرم — پالت روشن و طلایی. */
+
+/* ---------------------------------------------------------------------------
+   توکن‌های طراحی (Design Tokens)
+   --------------------------------------------------------------------------- */
+:root {
+  /* پالت کاغذ و مرکب */
+  --paper: #f7f1e3;        /* کرم گرم */
+  --paper-2: #fbf7ee;      /* کرم روشن‌تر برای کارت‌ها */
+  --ink: #2a2118;          /* قهوه‌ای-مشکی عمیق */
+  --muted: #7a6a55;        /* خاکستری-قهوه‌ای ملایم */
+
+  /* طلا و تذهیب */
+  --gold: #c2982f;
+  --gold-2: #e3b94a;       /* زعفرانی روشن */
+
+  /* فیروزه‌ای ایرانی */
+  --teal: #176f6b;
+  --teal-2: #1f8c86;
+
+  /* تراکوتا/گل‌سرخی */
+  --rose: #9c4f3f;
+
+  /* خطوط مویی */
+  --line: rgba(120, 95, 60, 0.18);
+
+  /* سایه‌ها (نرم و چندلایه) */
+  --shadow-sm: 0 1px 2px rgba(42, 33, 24, 0.06), 0 1px 3px rgba(42, 33, 24, 0.08);
+  --shadow: 0 4px 12px rgba(42, 33, 24, 0.08), 0 2px 6px rgba(42, 33, 24, 0.06);
+  --shadow-lg: 0 12px 30px rgba(42, 33, 24, 0.14), 0 6px 14px rgba(42, 33, 24, 0.08);
+  --shadow-gold: 0 6px 18px rgba(194, 152, 47, 0.28);
+
+  /* شعاع گردی */
+  --r: 16px;
+  --r-sm: 10px;
+  --r-pill: 999px;
+
+  /* گرادیان‌های پایه */
+  --grad-gold: linear-gradient(135deg, var(--gold-2), var(--gold));
+  --grad-teal: linear-gradient(135deg, var(--teal-2), var(--teal));
+  --grad-header: linear-gradient(120deg, #14524f 0%, #1d6b66 45%, #3a2c1e 100%);
+
+  /* زمان‌بندی انتقال‌ها */
+  --t-fast: 150ms;
+  --t: 200ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* جعبه‌بندی یکنواخت تا padding/border باعث سرریز افقی نشود. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* اندازهٔ فونت واکنش‌گرا: از ۳۲۰px تا ۱۹۲۰px به‌نرمی مقیاس می‌گیرد. */
+  font-size: clamp(15px, 0.9rem + 0.25vw, 18px);
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  /* جلوگیری از اسکرول افقی در هر عرضی بین ۳۲۰ تا ۱۹۲۰ پیکسل (R7.4). */
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  direction: rtl;
+  text-align: right;
+  min-height: 100vh;
+  min-height: 100dvh;
+  line-height: 1.7;
+  font-family: 'Vazirmatn', 'Tahoma', system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  color: #f8f5ec;
+  /* صحنهٔ تیرهٔ نیمه‌شب پیرامون «دستگاه» (تجربهٔ پخش‌کنندهٔ استوری‌وار). */
+  background-color: #05070f;
+  background-image:
+    radial-gradient(60% 45% at 50% 0%, rgba(56, 60, 110, 0.38), transparent 70%),
+    radial-gradient(70% 55% at 50% 100%, rgba(212, 175, 55, 0.07), transparent 72%),
+    radial-gradient(circle at 50% 38%, #0b1020 0%, #05070f 78%);
+  background-attachment: fixed;
+  /* قطع کلمات طولانی/URLها تا از سرریز افقی جلوگیری شود. */
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* ---------------------------------------------------------------------------
+   تایپوگرافی پایه و پیوندها
+   --------------------------------------------------------------------------- */
+h1, h2, h3, h4 {
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--teal);
+  text-decoration: none;
+  transition: color var(--t-fast) var(--ease);
+}
+
+a:hover {
+  color: var(--teal-2);
+}
+
+/* عناصر رسانه‌ای هیچ‌گاه از عرض ظرف خود فراتر نمی‌روند. */
+img,
+video,
+audio,
+canvas,
+svg,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ورودی‌ها و دکمه‌ها فونت محیط را به ارث می‌برند و سرریز نمی‌کنند. */
+input,
+button,
+select,
+textarea {
+  font: inherit;
+  max-width: 100%;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------------------
+   حلقهٔ فوکوس قابل‌دسترس (طلایی)
+   --------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ---------------------------------------------------------------------------
+   ظرف محتوای اصلی
+   --------------------------------------------------------------------------- */
+.app-container {
+  width: 100%;
+  max-width: 75rem;
+  margin: 0 auto;
+  padding-inline: 1rem;
+}
+
+/* ---------------------------------------------------------------------------
+   نوار اسکرول باریک و سفارشی
+   --------------------------------------------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--gold-2), var(--gold));
+  border-radius: var(--r-pill);
+  border: 2px solid var(--paper);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(var(--gold), #a87f23);
+}
+
+/* ---------------------------------------------------------------------------
+   کلیدفریم‌های مشترک (محو/لغزش ملایم برای محتوای ویوها)
+   --------------------------------------------------------------------------- */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
