@@ -65,12 +65,7 @@ const SWIPE_THRESHOLD = 60;
     PoemPickerComponent,
   ],
   template: `
-    <section
-      class="player"
-      dir="rtl"
-      (pointerdown)="onPointerDown($event)"
-      (pointerup)="onPointerUp($event)"
-    >
+    <section class="player" dir="rtl">
       <!-- نوار پیشرفت استوری‌وار (currentTime/duration) -->
       <div
         class="player__progress"
@@ -271,7 +266,13 @@ const SWIPE_THRESHOLD = 60;
         </div>
 
         <!-- ستون متن همگام (کارائوکه‌وار: بیت فعال در نقطهٔ کانونی، بقیه محو) -->
-        <div class="player__lyrics" #lyrics>
+        <div
+          class="player__lyrics"
+          #lyrics
+          (pointerdown)="onPointerDown($event)"
+          (pointerup)="onPointerUp($event)"
+          (pointercancel)="onPointerCancel()"
+        >
           <div class="player__lyrics-track">
             @for (verse of lyricVerses; track verse.vOrder; let i = $index) {
               <p
@@ -431,7 +432,6 @@ const SWIPE_THRESHOLD = 60;
             transparent 72%
           );
         font-family: Vazirmatn, system-ui, sans-serif;
-        touch-action: pan-y;
         -webkit-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
@@ -803,6 +803,8 @@ const SWIPE_THRESHOLD = 60;
         display: flex;
         align-items: center;
         justify-content: center;
+        /* همهٔ ژست‌های لمسی این ناحیه در کنترل ماست (جابه‌جایی بیت با کشیدن) */
+        touch-action: none;
       }
 
       /* فقط سه بیتِ نمایان (قبلی/جاری/بعدی) به‌صورت مرکزچین. */
@@ -1308,6 +1310,11 @@ export class ImmersivePlayerComponent implements OnInit {
       // کشیدن به پایین → بیت پیشین.
       this.stepVerse(-1);
     }
+  }
+
+  /** لغو ژست (مثلاً وقتی سیستم لمس را قطع می‌کند). */
+  onPointerCancel(): void {
+    this.pointerStartX = null;
   }
 
   /**
