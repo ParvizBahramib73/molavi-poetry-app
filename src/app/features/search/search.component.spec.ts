@@ -13,12 +13,12 @@
  * Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5
  */
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 
 import { GanjoorService } from '../../core/ganjoor.service';
-import { GanjoorApiError, PoemSummary, SearchResultPage } from '../../models';
+import { GanjoorApiError, PoemSummary, SearchResultPage, Verse } from '../../models';
 import { SearchComponent } from './search.component';
 
 /** ساخت یک صفحهٔ نتیجهٔ آزمایشی. */
@@ -40,7 +40,9 @@ describe('SearchComponent', () => {
   beforeEach(async () => {
     ganjoorSpy = jasmine.createSpyObj<GanjoorService>('GanjoorService', [
       'searchPoems',
+      'getPoemVerses',
     ]);
+    ganjoorSpy.getPoemVerses.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [SearchComponent],
@@ -74,9 +76,9 @@ describe('SearchComponent', () => {
     const input = fixture.nativeElement.querySelector('#molavi-search-input') as HTMLInputElement;
     const label = fixture.nativeElement.querySelector('label[for="molavi-search-input"]') as HTMLLabelElement;
 
-    expect(label.textContent).toContain('نام یا بخشی از شعر');
+    expect(label.textContent).toContain('بخشی از شعر');
     expect(input.type).toBe('search');
-    expect(fixture.nativeElement.textContent).toContain('مثلاً');
+    expect(input.placeholder).toContain('مثلاً');
   });
 
   describe('اعتبارسنجی ورودی (R5.2)', () => {
@@ -131,7 +133,9 @@ describe('SearchComponent', () => {
       expect(links.length).toBe(2);
       expect(links[0].getAttribute('href')).toBe('/poem/11');
       expect(links[1].getAttribute('href')).toBe('/poem/22');
-      expect(links[0].textContent).toContain('شعر اول');
+      expect(links[0].textContent).toContain('خواندن شعر');
+      const titles = fixture.nativeElement.querySelectorAll('.search__card-title');
+      expect(titles[0].textContent).toContain('شعر اول');
     });
 
     it('عبارت پیش از ارسال trim می‌شود', () => {
@@ -143,6 +147,125 @@ describe('SearchComponent', () => {
       fixture.detectChanges();
 
       expect(ganjoorSpy.searchPoems).toHaveBeenCalledWith('مولوی', 1);
+    });
+  });
+
+  describe('جست‌وجوی بخشی از شعر و تجربه موبایل', () => {
+    it('متن بیت پیدا شده را برجسته می‌کند و لینک مطالعه به همان بیت اشاره می‌کند', () => {
+      const results: PoemSummary[] = [
+        { id: 42, title: 'غزل شماره ۴۲', fullUrl: '/moulavi/shams/ghazal/sh42' },
+      ];
+      const verses: Verse[] = [
+        { vOrder: 1, text: 'مصرع آغازین', position: 'RIGHT' },
+        { vOrder: 2, text: 'بشنو از نی چون حکایت می‌کند', position: 'RIGHT' },
+        { vOrder: 3, text: 'از جدایی‌ها شکایت می‌کند', position: 'LEFT' },
+      ];
+      ganjoorSpy.searchPoems.and.returnValue(of(makePage('بشنو از نی', results)));
+      ganjoorSpy.getPoemVerses.and.returnValue(of(verses));
+
+      fixture.detectChanges();
+      component.term = 'بشنو از نی';
+      component.onSubmit();
+      fixture.detectChanges();
+
+      expect(ganjoorSpy.getPoemVerses).toHaveBeenCalledOnceWith(42);
+      const match = fixture.nativeElement.querySelector('.search__verse mark') as HTMLElement;
+      expect(match.textContent).toBe('بشنو از نی');
+      expect(fixture.nativeElement.textContent).toContain('از جدایی‌ها');
+      const link = fixture.nativeElement.querySelector('.search__result-link') as HTMLAnchorElement;
+      expect(link.getAttribute('href')).toContain('v=2');
+    });
+
+    it('تغییر ورودی را با مکث ۶۰۰ میلی‌ثانیه جست‌وجو می‌کند', fakeAsync(() => {
+      ganjoorSpy.searchPoems.and.returnValue(of(makePage('عشق', [])));
+      fixture.detectChanges();
+
+      component.onTermChange('عشق');
+      tick(599);
+      expect(ganjoorSpy.searchPoems).not.toHaveBeenCalled();
+      tick(1);
+
+      expect(ganjoorSpy.searchPoems).toHaveBeenCalledOnceWith('عشق', 1);
+    }));
+
+    it('پاسخ جست‌وجوی قبلی را بعد از تغییر عبارت نشان نمی‌دهد', () => {
+      const stale = new Subject<SearchResultPage>();
+      ganjoorSpy.searchPoems.and.returnValues(
+        stale.asObservable(),
+        of(makePage('نی', [
+          { id: 99, title: 'شعر جدید', fullUrl: '/moulavi/masnavi/daftar1/sh5' },
+        ])),
+      );
+      fixture.detectChanges();
+      component.term = 'عشق';
+      component.onSubmit();
+      component.onTermChange('نی');
+      component.term = 'نی';
+      component.onSubmit();
+      stale.next(makePage('عشق', [
+        { id: 11, title: 'نتیجه قدیمی', fullUrl: '/moulavi/masnavi/daftar1/sh1' },
+      ]));
+      fixture.detectChanges();
+
+      expect(component.results.map((hit) => hit.id)).toEqual([99]);
+      expect(text()).not.toContain('نتیجه قدیمی');
+    });
+
+    it('نتایج را در گروه‌های هشت‌تایی نشان می‌دهد، نه یک فهرست طولانی', () => {
+      const results = Array.from({ length: 18 }, (_, n) => ({
+        id: n + 1,
+        title: `غزل شماره ${n + 1}`,
+        fullUrl: `/moulavi/shams/ghazal/sh${n + 1}`,
+      }));
+      ganjoorSpy.searchPoems.and.returnValue(of(makePage('عشق', results)));
+      fixture.detectChanges();
+      component.term = 'عشق';
+      component.onSubmit();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelectorAll('.search__card').length).toBe(8);
+      component.showMore();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelectorAll('.search__card').length).toBe(16);
+      component.showMore();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelectorAll('.search__card').length).toBe(18);
+    });
+
+    it('پیش‌نمایش بیت‌ها را با حداکثر دو درخواست همزمان واکشی می‌کند', () => {
+      const results = [1, 2, 3, 4].map((id) => ({
+        id,
+        title: `غزل شماره ${id}`,
+        fullUrl: `/moulavi/shams/ghazal/sh${id}`,
+      }));
+      const verse1 = new Subject<Verse[]>();
+      const verse2 = new Subject<Verse[]>();
+      const verse3 = new Subject<Verse[]>();
+      ganjoorSpy.searchPoems.and.returnValue(of(makePage('عشق', results)));
+      ganjoorSpy.getPoemVerses.and.returnValues(verse1, verse2, verse3, of([]));
+      fixture.detectChanges();
+      component.term = 'عشق';
+      component.onSubmit();
+
+      expect(ganjoorSpy.getPoemVerses).toHaveBeenCalledTimes(2);
+      verse1.next([]);
+      verse1.complete();
+
+      expect(ganjoorSpy.getPoemVerses).toHaveBeenCalledTimes(3);
+    });
+
+    it('وقتی متن بیت دریافت نشود، نتیجه اصلی را همچنان نمایش می‌دهد', () => {
+      ganjoorSpy.searchPoems.and.returnValue(of(makePage('نی', [
+        { id: 123, title: 'غزل شماره ۱۲۳', fullUrl: '/moulavi/shams/ghazal/sh123' },
+      ])));
+      ganjoorSpy.getPoemVerses.and.returnValue(throwError(() => new Error('offline')));
+      fixture.detectChanges();
+      component.term = 'نی';
+      component.onSubmit();
+      fixture.detectChanges();
+
+      expect(text()).toContain('غزل شماره ۱۲۳');
+      expect(text()).toContain('متن نمونه فعلاً در دسترس نیست');
     });
   });
 

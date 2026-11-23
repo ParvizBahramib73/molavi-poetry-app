@@ -1,372 +1,256 @@
 import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  Input,
-  OnInit,
+  ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription, from, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, mergeMap, tap } from 'rxjs/operators';
 
 import { GanjoorService } from '../../core/ganjoor.service';
-import { GanjoorApiError, PoemSummary } from '../../models';
-import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { findVersePreview, normalizePersianText, VersePreview } from '../../core/search-text';
+import { GanjoorApiError, PoemSummary, Verse } from '../../models';
 import { ErrorStateComponent } from '../../shared/error-state/error-state.component';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator.component';
 
-/** کمینهٔ طول عبارت جست‌وجوی معتبر (R5.2). */
 const MIN_TERM_LENGTH = 2;
-/** بیشینهٔ طول عبارت جست‌وجو (R5.1). */
 const MAX_TERM_LENGTH = 100;
-/** پیام راهنمای فارسی برای ورودی نامعتبر (R5.2). */
-const GUIDANCE_MESSAGE = 'عبارت جست‌وجو باید حداقل ۲ نویسه باشد.';
+const RESULTS_PER_STEP = 8;
+const PREVIEW_CONCURRENCY = 2;
 
-/**
- * ویوی جست‌وجوی اشعار مولوی (Search).
- *
- * این کامپوننت یک ورودی متن و فهرست نتایج را فراهم می‌کند و رفتارهای زیر را
- * تضمین می‌کند:
- * - اعتبارسنجی عبارت: عبارت خالی/تنها فاصله یا کوتاه‌تر از ۲ نویسه باعث نمایش
- *   پیام راهنمای فارسی می‌شود و هیچ درخواستی به API ارسال نمی‌شود (R5.2).
- *   همچنین عبارت پیش از ارسال تا حداکثر ۱۰۰ نویسه کوتاه می‌شود (R5.1).
- * - واکشی حداکثر ۵۰ نتیجهٔ محدود به مولوی از طریق
- *   {@link GanjoorService.searchPoems} (دامنه در سرویس به poetId=5 محدود می‌شود)
- *   و نمایش آن‌ها (R5.1).
- * - ناوبری به Reading_View هر نتیجه از مسیر `/poem/:id` با `routerLink` (R5.3).
- * - حالت «نتیجه‌ای یافت نشد» با {@link EmptyStateComponent} (R5.4).
- * - حالت خطا با {@link ErrorStateComponent} و دکمهٔ «تلاش مجدد» که همان عبارت
- *   واردشده را دوباره جست‌وجو می‌کند و عبارت واردشده حفظ می‌شود (R5.5).
- *
- * مسیر این کامپوننت `search` است و مقدار اولیهٔ عبارت می‌تواند از پارامتر
- * کوئری `?q=` (با `withComponentInputBinding`) خوانده شود.
- *
- * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5
- */
+type PreviewState = 'idle' | 'loading' | 'ready' | 'unavailable';
+
+interface SearchHit extends PoemSummary {
+  preview: VersePreview | null;
+  previewState: PreviewState;
+}
+
 @Component({
   selector: 'app-search',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FormsModule,
-    RouterLink,
-    LoadingIndicatorComponent,
-    ErrorStateComponent,
-    EmptyStateComponent,
-  ],
-  template: `
-    <section class="search" aria-label="جست‌وجوی اشعار مولوی">
-      <h2 class="search__title">پیدا کردن شعر</h2>
-      <p class="search__hint">یک کلمه از شعر را بنویس؛ مثلاً «عشق».</p>
-
-      <form class="search__form" (ngSubmit)="onSubmit()">
-        <label class="search__label" for="molavi-search-input">نام یا بخشی از شعر</label>
-        <input
-          id="molavi-search-input"
-          type="search"
-          class="search__input"
-          name="term"
-          [(ngModel)]="term"
-          [maxlength]="maxLength"
-          placeholder="عبارت جست‌وجو را وارد کنید…"
-          autocomplete="off"
-        />
-        <button type="submit" class="search__submit">جست‌وجو</button>
-      </form>
-
-      @if (guidanceMessage) {
-        <p class="search__guidance" role="status">{{ guidanceMessage }}</p>
-      }
-
-      @if (loading) {
-        <app-loading-indicator
-          message="در حال جست‌وجو…"
-        ></app-loading-indicator>
-      } @else if (error) {
-        <app-error-state
-          [message]="error.messageFa"
-          (retry)="onRetry()"
-        ></app-error-state>
-      } @else if (searched && results.length === 0) {
-        <app-empty-state message="نتیجه‌ای یافت نشد."></app-empty-state>
-      } @else if (results.length > 0) {
-        <ul class="search__results" aria-label="نتایج جست‌وجو">
-          @for (item of results; track item.id) {
-            <li class="search__result">
-              <a class="search__result-link" [routerLink]="['/poem', item.id]">
-                {{ item.title }}
-              </a>
-            </li>
-          }
-        </ul>
-      }
-    </section>
-  `,
-  styles: [
-    `
-      :host {
-        display: block;
-        flex: 1 0 auto;
-        width: 100%;
-        background: #f7f1e3;
-      }
-
-      .search {
-        width: 100%;
-        color: #2a2118;
-        padding: 1.5rem;
-        max-width: 48rem;
-        margin: 0 auto;
-        animation: fadeSlideIn var(--t, 220ms) var(--ease) both;
-      }
-
-      .search__title {
-        position: relative;
-        margin: 0 0 1.25rem;
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: var(--ink, #2a2118);
-        padding-bottom: 0.5rem;
-      }
-
-      .search__title::after {
-        content: '';
-        position: absolute;
-        inset-inline-start: 0;
-        bottom: 0;
-        width: 3.5rem;
-        height: 3px;
-        border-radius: var(--r-pill, 999px);
-        background: var(--grad-gold, linear-gradient(135deg, #e3b94a, #c2982f));
-      }
-
-      .search__hint {
-        margin: -0.5rem 0 1rem;
-        color: #5f5140;
-        font-size: 0.98rem;
-        line-height: 1.7;
-      }
-
-      .search__form {
-        display: flex;
-        align-items: end;
-        flex-wrap: wrap;
-        gap: 0.6rem;
-      }
-
-      .search__label {
-        flex: 0 0 100%;
-        font-size: 0.98rem;
-        font-weight: 700;
-        color: #3b3328;
-      }
-
-      .search__input {
-        flex: 1 1 8rem;
-        min-width: 0;
-        min-height: 48px;
-        padding: 0.65rem 1rem;
-        font: inherit;
-        color: var(--ink, #2a2118);
-        background: var(--paper-2, #fbf7ee);
-        border: 1px solid var(--line, rgba(120, 95, 60, 0.18));
-        border-radius: var(--r-pill, 999px);
-        box-shadow: var(--shadow-sm);
-        transition: border-color var(--t, 200ms) var(--ease),
-          box-shadow var(--t, 200ms) var(--ease);
-      }
-
-      .search__input:focus {
-        outline: none;
-        border-color: var(--gold, #c2982f);
-        box-shadow: 0 0 0 3px rgba(227, 185, 74, 0.28);
-      }
-
-      .search__submit {
-        min-height: 48px;
-        padding: 0.65rem 1.15rem;
-        font: inherit;
-        font-weight: 700;
-        color: #fff;
-        background: var(--grad-teal, linear-gradient(135deg, #1f8c86, #176f6b));
-        border: none;
-        border-radius: var(--r-pill, 999px);
-        cursor: pointer;
-        box-shadow: 0 6px 16px rgba(23, 111, 107, 0.28);
-        transition: transform var(--t-fast, 150ms) var(--ease),
-          box-shadow var(--t-fast, 150ms) var(--ease), filter var(--t-fast, 150ms) var(--ease);
-      }
-
-      .search__submit:hover {
-        transform: translateY(-2px);
-        filter: brightness(1.05);
-        box-shadow: 0 10px 22px rgba(23, 111, 107, 0.38);
-      }
-
-      .search__submit:active {
-        transform: translateY(0);
-      }
-
-      .search__guidance {
-        margin: 0.85rem 0 0;
-        padding: 0.6rem 0.9rem;
-        color: var(--rose, #9c4f3f);
-        font-size: 0.95rem;
-        background: rgba(156, 79, 63, 0.08);
-        border-radius: var(--r-sm, 10px);
-        border-inline-start: 3px solid var(--rose, #9c4f3f);
-      }
-
-      .search__results {
-        list-style: none;
-        margin: 1.5rem 0 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.6rem;
-      }
-
-      .search__result {
-        margin: 0;
-      }
-
-      .search__result-link {
-        position: relative;
-        display: flex;
-        align-items: center;
-        min-height: 52px;
-        padding: 0.85rem 1.1rem;
-        color: var(--ink, #2a2118);
-        text-decoration: none;
-        background: var(--paper-2, #fbf7ee);
-        border: 1px solid var(--line, rgba(120, 95, 60, 0.18));
-        border-radius: var(--r-sm, 10px);
-        box-shadow: var(--shadow-sm);
-        overflow: hidden;
-        transition: transform var(--t-fast, 150ms) var(--ease),
-          box-shadow var(--t-fast, 150ms) var(--ease),
-          border-color var(--t-fast, 150ms) var(--ease),
-          background var(--t-fast, 150ms) var(--ease);
-      }
-
-      .search__result-link::before {
-        content: '';
-        position: absolute;
-        inset-inline-start: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: var(--grad-gold, linear-gradient(135deg, #e3b94a, #c2982f));
-        transform: scaleY(0);
-        transition: transform var(--t, 200ms) var(--ease);
-      }
-
-      .search__result-link:hover {
-        transform: translateY(-2px);
-        background: #fff;
-        border-color: rgba(194, 152, 47, 0.45);
-        box-shadow: var(--shadow);
-        text-decoration: none;
-      }
-
-      .search__result-link:hover::before {
-        transform: scaleY(1);
-      }
-    `,
-  ],
+  imports: [FormsModule, RouterLink, ErrorStateComponent, LoadingIndicatorComponent],
+  templateUrl: './search.component.html',
+  styleUrl: './search.component.css',
 })
-export class SearchComponent implements OnInit {
-  /** عبارت جست‌وجو از پارامتر کوئری `?q=` (با `withComponentInputBinding`). */
+export class SearchComponent implements OnInit, OnDestroy {
   @Input()
-  set q(value: string) {
-    this.term = value ?? '';
-  }
+  set q(value: string | null | undefined) { this.term = value ?? ''; }
 
-  /** عبارت واردشده در ورودی (با دو طرفه‌بودن `ngModel`). حفظ می‌شود (R5.5). */
   term = '';
-
-  /** بیشینهٔ طول مجاز ورودی (R5.1). */
   readonly maxLength = MAX_TERM_LENGTH;
-
-  /** نتایج جست‌وجوی محدود به مولوی (حداکثر ۵۰، R5.1). */
-  results: PoemSummary[] = [];
-
-  /** نشانگر در حال بارگذاری بودن درخواست جست‌وجو (R6.3). */
+  readonly examples = ['بشنو از نی', 'از محبت', 'عشق'];
+  results: SearchHit[] = [];
+  visibleCount = RESULTS_PER_STEP;
+  hasMore = false;
   loading = false;
-
-  /** خطای جست‌وجو در صورت ناموفق بودن درخواست (R5.5). */
-  error: GanjoorApiError | null = null;
-
-  /** پیام راهنمای فارسی هنگام ورودی نامعتبر (R5.2). */
-  guidanceMessage = '';
-
-  /** آیا حداقل یک جست‌وجوی معتبر انجام شده است (برای تمایز حالت خالی). */
+  loadingMore = false;
+  moreError = false;
   searched = false;
+  error: GanjoorApiError | null = null;
+  guidanceMessage = '';
+  lastSearchedTerm = '';
 
-  /** عبارتِ آخرین جست‌وجوی معتبر؛ مبنای «تلاش مجدد» (R5.5). */
-  private lastSearchedTerm = '';
+  private currentPage = 0;
+  private generation = 0;
+  private inputChanges = new Subject<string>();
+  private inputSubscription: Subscription | null = null;
+  private searchSubscription: Subscription | null = null;
+  private loadMoreSubscription: Subscription | null = null;
+  private previewSubscription: Subscription | null = null;
+  private readonly verseCache = new Map<number, Verse[]>();
 
-  private subscription: Subscription | null = null;
+  constructor(private readonly ganjoor: GanjoorService, private readonly cdr: ChangeDetectorRef) {}
 
-  constructor(
-    private readonly ganjoor: GanjoorService,
-    private readonly cdr: ChangeDetectorRef,
-  ) {}
+  get visibleResults(): SearchHit[] { return this.results.slice(0, this.visibleCount); }
 
-  /** اگر مقدار اولیه از `?q=` معتبر باشد، جست‌وجوی اولیه انجام می‌شود. */
   ngOnInit(): void {
-    if (this.term && this.term.trim().length >= MIN_TERM_LENGTH) {
-      this.onSubmit();
-    }
+    this.inputSubscription = this.inputChanges.pipe(
+      debounceTime(600),
+      map((value) => normalizePersianText(value).slice(0, MAX_TERM_LENGTH)),
+      distinctUntilChanged(),
+    ).subscribe((value) => {
+      if (value.length >= MIN_TERM_LENGTH) this.runSearch(value);
+    });
+    if (normalizePersianText(this.term).length >= MIN_TERM_LENGTH) this.onSubmit();
   }
 
-  /** اعتبارسنجی و آغاز جست‌وجو هنگام ثبت فرم (R5.1, R5.2). */
-  onSubmit(): void {
-    const trimmed = this.term.trim();
+  ngOnDestroy(): void {
+    this.inputSubscription?.unsubscribe();
+    this.inputChanges.complete();
+    this.cancelRequests();
+  }
 
-    // اعتبارسنجی: خالی/تنها فاصله یا کوتاه‌تر از ۲ نویسه (R5.2).
-    if (trimmed.length < MIN_TERM_LENGTH) {
-      this.guidanceMessage = GUIDANCE_MESSAGE;
-      this.results = [];
-      this.error = null;
+  onTermChange(value: string): void {
+    this.term = value;
+    this.guidanceMessage = '';
+    this.generation += 1;
+    this.cancelRequests();
+    this.loading = false;
+    this.searched = false;
+    this.error = null;
+    this.results = [];
+    this.hasMore = false;
+    this.moreError = false;
+    this.inputChanges.next(value);
+    this.cdr.markForCheck();
+  }
+
+  onSubmit(): void {
+    const term = normalizePersianText(this.term).slice(0, MAX_TERM_LENGTH);
+    this.inputChanges.next('');
+    if (term.length < MIN_TERM_LENGTH) {
+      this.guidanceMessage = 'برای پیدا کردن شعر، دست‌کم ۲ حرف بنویس.';
       this.searched = false;
+      this.loading = false;
+      this.error = null;
+      this.results = [];
+      this.cancelRequests();
+      this.cdr.markForCheck();
+      return;
+    }
+    this.guidanceMessage = '';
+    this.runSearch(term, true);
+  }
+
+  useExample(example: string): void { this.term = example; this.onSubmit(); }
+
+  clearQuery(): void {
+    this.term = '';
+    this.onTermChange('');
+    this.lastSearchedTerm = '';
+  }
+
+  focusInput(): void {
+    if (typeof document !== 'undefined') document.getElementById('molavi-search-input')?.focus();
+  }
+
+  onRetry(): void {
+    if (this.lastSearchedTerm) this.runSearch(this.lastSearchedTerm, true);
+  }
+
+  showMore(): void {
+    if (this.loading || this.loadingMore) return;
+    if (this.visibleCount < this.results.length) {
+      this.visibleCount = Math.min(this.visibleCount + RESULTS_PER_STEP, this.results.length);
+      this.hydrateVisiblePreviews();
+      this.cdr.markForCheck();
       return;
     }
 
-    // محدودسازی طول به حداکثر ۱۰۰ نویسه پیش از ارسال (R5.1).
-    const term = trimmed.slice(0, MAX_TERM_LENGTH);
-    this.guidanceMessage = '';
-    this.runSearch(term);
+    if (!this.hasMore) return;
+    const generation = this.generation;
+    this.loadingMore = true;
+    this.moreError = false;
+    this.loadMoreSubscription?.unsubscribe();
+    this.loadMoreSubscription = this.ganjoor.searchPoems(this.lastSearchedTerm, this.currentPage + 1)
+      .subscribe({
+        next: (page) => {
+          if (generation !== this.generation) return;
+          const existing = new Set(this.results.map((item) => item.id));
+          const incoming = page.results.filter((item) => !existing.has(item.id)).map((item) => this.toHit(item));
+          this.results = [...this.results, ...incoming];
+          this.currentPage = page.pageNumber;
+          this.hasMore = page.hasMore;
+          this.loadingMore = false;
+          this.visibleCount = Math.min(this.visibleCount + RESULTS_PER_STEP, this.results.length);
+          this.hydrateVisiblePreviews();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          if (generation !== this.generation) return;
+          this.loadingMore = false;
+          this.moreError = true;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
-  /** تلاش مجدد با همان عبارت آخرین جست‌وجو؛ عبارت واردشده حفظ می‌شود (R5.5). */
-  onRetry(): void {
-    if (this.lastSearchedTerm) {
-      this.runSearch(this.lastSearchedTerm);
-    }
-  }
-
-  /** اجرای واقعی جست‌وجو محدود به مولوی (poetId=5 در سرویس تضمین می‌شود). */
-  private runSearch(term: string): void {
+  private runSearch(term: string, force = false): void {
+    if (!force && term === this.lastSearchedTerm && this.searched && !this.error) return;
+    this.generation += 1;
+    this.cancelRequests();
     this.lastSearchedTerm = term;
     this.loading = true;
-    this.error = null;
+    this.loadingMore = false;
+    this.moreError = false;
     this.searched = true;
-
-    this.subscription?.unsubscribe();
-    // صفحهٔ ۱؛ سرویس دامنه را به مولوی محدود و نتایج را به ۵۰ مورد محدود می‌کند.
-    this.subscription = this.ganjoor.searchPoems(term, 1).subscribe({
+    this.error = null;
+    this.results = [];
+    this.visibleCount = RESULTS_PER_STEP;
+    this.currentPage = 0;
+    this.hasMore = false;
+    const generation = this.generation;
+    this.searchSubscription = this.ganjoor.searchPoems(term, 1).subscribe({
       next: (page) => {
-        this.results = page.results;
+        if (generation !== this.generation) return;
+        this.results = page.results.map((item) => this.toHit(item));
+        this.currentPage = page.pageNumber;
+        this.hasMore = page.hasMore;
         this.loading = false;
+        this.hydrateVisiblePreviews();
         this.cdr.markForCheck();
       },
       error: (err: GanjoorApiError) => {
+        if (generation !== this.generation) return;
         this.error = err;
-        this.results = [];
         this.loading = false;
+        this.results = [];
         this.cdr.markForCheck();
       },
     });
+    this.cdr.markForCheck();
+  }
+
+  private toHit(item: PoemSummary): SearchHit {
+    return { ...item, preview: null, previewState: 'idle' };
+  }
+
+  private hydrateVisiblePreviews(): void {
+    if (this.previewSubscription && !this.previewSubscription.closed) return;
+    const pending = this.visibleResults.filter((item) => item.previewState === 'idle');
+    if (!pending.length) return;
+    pending.forEach((item) => (item.previewState = 'loading'));
+    const generation = this.generation;
+    const term = this.lastSearchedTerm;
+    this.previewSubscription = from(pending).pipe(
+      mergeMap((item) => {
+        const cached = this.verseCache.get(item.id);
+        const response = cached ? of(cached) : this.ganjoor.getPoemVerses(item.id).pipe(
+          tap((verses) => {
+            if (this.verseCache.size >= 60) {
+              const first = this.verseCache.keys().next().value;
+              if (first !== undefined) this.verseCache.delete(first);
+            }
+            this.verseCache.set(item.id, verses);
+          }),
+        );
+        return response.pipe(
+          map((verses) => ({ item, preview: findVersePreview(verses, term) })),
+          catchError(() => of({ item, preview: null })),
+        );
+      }, PREVIEW_CONCURRENCY),
+    ).subscribe({
+      next: ({ item, preview }) => {
+        if (generation !== this.generation) return;
+        item.preview = preview;
+        item.previewState = preview ? 'ready' : 'unavailable';
+        this.cdr.markForCheck();
+      },
+      complete: () => {
+        if (generation !== this.generation) return;
+        this.previewSubscription = null;
+        this.hydrateVisiblePreviews();
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private cancelRequests(): void {
+    this.searchSubscription?.unsubscribe();
+    this.loadMoreSubscription?.unsubscribe();
+    this.previewSubscription?.unsubscribe();
+    this.searchSubscription = null;
+    this.loadMoreSubscription = null;
+    this.previewSubscription = null;
   }
 }

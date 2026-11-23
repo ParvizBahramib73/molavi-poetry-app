@@ -69,3 +69,18 @@ The browser app is designed for Persian-speaking users with different levels of 
 Automated component tests cover the primary controls, persistence, keyboard verse selection, confirmation states, and touch-target layout. For moderated tests with real participants and the manual browser/accessibility checklist, see [the Persian usability study plan](docs/usability-test-plan-fa.md).
 
 Passing automated tests **does not** establish that human usability sessions, screen-reader audits, 200% zoom tests, or real-device compatibility have been completed.
+
+
+## Verse-first search
+
+The Persian search page is designed for remembering only a few words rather than knowing a poem title.
+
+- Type any short part of a verse; automatically search after a 600ms pause or press the visible Search button.
+- Normalize common Persian/Arabic character and diacritic differences before searching.
+- Show matching hemistiches and highlight the original words without injecting HTML.
+- Use the lightweight Ganjoor verses endpoint for only the eight visible results at a time, with a maximum of two concurrent excerpt requests.
+- Open the full poem at the matching verse when a reliable excerpt is available, or listen to the poem directly.
+- Keep results accessible if snippet retrieval fails, and reveal additional results on demand.
+- Unit tests cover search behaviour, Persian normalization, stale-request cancellation, excerpt selection, pagination, and linked verse highlighting.
+
+API behaviour is verified in network-mocked tests; reliability and latency against Ganjoor's live servers still require field validation.
