@@ -99,7 +99,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     const term = normalizePersianText(this.term).slice(0, MAX_TERM_LENGTH);
     this.inputChanges.next('');
     if (term.length < MIN_TERM_LENGTH) {
-      this.guidanceMessage = 'برای پیدا کردن شعر، دست‌کم دو حرف بنویس.';
+      this.guidanceMessage = 'برای پیدا کردن شعر، دست‌کم ۲ حرف بنویس.';
       this.searched = false;
       this.loading = false;
       this.error = null;

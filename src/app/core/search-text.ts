@@ -34,7 +34,7 @@ function withIndexMap(value: string): { normalized: string; positions: number[] 
       .replace(/ة/g, 'ه')
       .toLowerCase();
 
-    if (/[\u200c\u200d\s،؛؟!.,:«»"'()[\]{}\-–—]/u.test(normalized)) {
+    if (/[\u200c\u200d\s،؛؟!.,:·«»"'()[\]{}\-–—]/u.test(normalized)) {
       normalized = ' ';
     }
 
@@ -127,16 +127,22 @@ export function findVersePreview(verses: readonly Verse[], query: string): Verse
   for (let i = 0; i < valid.length; i += 1) {
     const pair = [valid[i].text, valid[i + 1]?.text].filter(Boolean).join('  ·  ');
     const text = normalizePersianText(pair);
-    const exact = !!normalizedQuery && text.includes(normalizedQuery);
+    // Prefer showing the matching line itself, not the previous line with
+    // the match incidentally at the end of the two-line preview.
+    const exactOnLine = !!normalizedQuery &&
+      normalizePersianText(valid[i].text).includes(normalizedQuery);
+    const exactAcrossPair = !!normalizedQuery && text.includes(normalizedQuery);
     const foundWords = words.filter((word) => text.includes(word)).length;
     const hasAllWords = words.length > 1 && foundWords === words.length;
-    const score = exact ? 1000 - i : hasAllWords ? 500 - i : foundWords * 25 - i;
+    const score = exactOnLine ? 2000 - i
+      : exactAcrossPair ? 1500 - i
+      : hasAllWords ? 500 - i : foundWords * 25 - i;
 
     if (score > best.score) {
       best = {
         score,
         index: i,
-        kind: exact ? 'exact' : hasAllWords ? 'words' : 'sample',
+        kind: exactOnLine || exactAcrossPair ? 'exact' : hasAllWords ? 'words' : 'sample',
       };
     }
   }

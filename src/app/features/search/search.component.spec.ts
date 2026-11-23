@@ -76,9 +76,9 @@ describe('SearchComponent', () => {
     const input = fixture.nativeElement.querySelector('#molavi-search-input') as HTMLInputElement;
     const label = fixture.nativeElement.querySelector('label[for="molavi-search-input"]') as HTMLLabelElement;
 
-    expect(label.textContent).toContain('نام یا بخشی از شعر');
+    expect(label.textContent).toContain('بخشی از شعر');
     expect(input.type).toBe('search');
-    expect(fixture.nativeElement.textContent).toContain('مثلاً');
+    expect(input.placeholder).toContain('مثلاً');
   });
 
   describe('اعتبارسنجی ورودی (R5.2)', () => {
@@ -133,7 +133,9 @@ describe('SearchComponent', () => {
       expect(links.length).toBe(2);
       expect(links[0].getAttribute('href')).toBe('/poem/11');
       expect(links[1].getAttribute('href')).toBe('/poem/22');
-      expect(links[0].textContent).toContain('شعر اول');
+      expect(links[0].textContent).toContain('خواندن شعر');
+      const titles = fixture.nativeElement.querySelectorAll('.search__card-title');
+      expect(titles[0].textContent).toContain('شعر اول');
     });
 
     it('عبارت پیش از ارسال trim می‌شود', () => {
