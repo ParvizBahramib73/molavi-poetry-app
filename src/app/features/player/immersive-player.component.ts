@@ -67,7 +67,7 @@ const SWIPE_THRESHOLD = 60;
     PoemPickerComponent,
   ],
   template: `
-    <section class="player" dir="rtl">
+    <section class="player" dir="rtl" [class.player--large-text]="textLarge">
       <!-- نوار پیشرفت استوری‌وار (currentTime/duration) -->
       <div
         class="player__progress"
@@ -130,6 +130,7 @@ const SWIPE_THRESHOLD = 60;
                 (click)="toggleRecSheet()"
               >
                 <span class="player__reciter-dot" aria-hidden="true"></span>
+                <span class="player__reciter-label">تغییر صدا:</span>
                 <span class="player__reciter-name">{{
                   recitation.audioArtist || recitation.audioTitle || 'خوانش'
                 }}</span>
@@ -139,27 +140,6 @@ const SWIPE_THRESHOLD = 60;
           </div>
 
           <div class="player__header-actions">
-            <a class="player__icon-btn player__library" routerLink="/library" aria-label="کتابخانه من">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 4.5h11.5A2.5 2.5 0 0 1 19 7v13H7.5A2.5 2.5 0 0 1 5 17.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                <path d="M5 17.5A2.5 2.5 0 0 1 7.5 15H19M9 8h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              </svg>
-            </a>
-            <button
-              type="button"
-              class="player__icon-btn player__menu"
-              aria-label="فهرست اشعار"
-              (click)="openPicker()"
-            >
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M4 7h16M4 12h16M4 17h16"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
             <button
               type="button"
               class="player__icon-btn player__fullscreen"
@@ -190,6 +170,15 @@ const SWIPE_THRESHOLD = 60;
             </button>
           </div>
         </header>
+
+        <div class="player__quick-actions" role="group" aria-label="کارهای اصلی شعر">
+          <button type="button" class="player__quick-action player__quick-action--primary" (click)="openPicker()">
+            <span aria-hidden="true">☷</span> انتخاب شعر
+          </button>
+          <a class="player__quick-action" [routerLink]="['/poem', poem.id]">
+            <span aria-hidden="true">▤</span> خواندن متن
+          </a>
+        </div>
 
         <!-- شِوْرون‌های لبه برای سوایپ بین اشعار -->
         @if (poem.prevPoem) {
@@ -290,7 +279,12 @@ const SWIPE_THRESHOLD = 60;
                 [class.player__verse--hidden]="!isVisible(i)"
                 [style.opacity]="verseOpacity(i)"
                 #verseEl
+                [attr.role]="recitation ? 'button' : null"
+                [attr.tabindex]="recitation && isVisible(i) ? 0 : null"
+                [attr.aria-label]="recitation ? 'پخش از بیت ' + (i + 1) : null"
                 (click)="seekToVerse(i)"
+                (keydown.enter)="seekToVerse(i)"
+                (keydown.space)="seekToVerse(i); $event.preventDefault()"
               >
                 {{ verse.text }}
               </p>
@@ -343,6 +337,7 @@ const SWIPE_THRESHOLD = 60;
                       d="M7 6a1 1 0 0 1 2 0v12a1 1 0 0 1-2 0zM19 6.5v11a1 1 0 0 1-1.6.8l-7-5.5a1 1 0 0 1 0-1.6l7-5.5A1 1 0 0 1 19 6.5z"
                     />
                   </svg>
+                  <span class="player__ctrl-label">بیت قبل</span>
                 </button>
                 <button
                   type="button"
@@ -375,6 +370,7 @@ const SWIPE_THRESHOLD = 60;
                       />
                     </svg>
                   }
+                  <span class="player__ctrl-label">{{ playLabel }}</span>
                 </button>
                 <button
                   type="button"
@@ -387,6 +383,7 @@ const SWIPE_THRESHOLD = 60;
                       d="M17 6a1 1 0 0 1 2 0v12a1 1 0 0 1-2 0zM5 6.5v11a1 1 0 0 0 1.6.8l7-5.5a1 1 0 0 0 0-1.6l-7-5.5A1 1 0 0 0 5 6.5z"
                     />
                   </svg>
+                  <span class="player__ctrl-label">بیت بعد</span>
                 </button>
               </div>
               <div class="player__secondary-actions">
@@ -398,7 +395,13 @@ const SWIPE_THRESHOLD = 60;
                   <span aria-hidden="true">↗</span>
                   اشتراک بیت
                 </button>
+                <button type="button" class="player__secondary-action" [attr.aria-pressed]="textLarge" (click)="toggleLargeText()">
+                  <span aria-hidden="true">آ+</span> {{ textLarge ? 'متن معمولی' : 'متن درشت' }}
+                </button>
               </div>
+              @if (playbackError) {
+                <p class="player__play-error" role="alert">{{ playbackError }}</p>
+              }
             </div>
           </div>
         } @else {
@@ -422,6 +425,7 @@ const SWIPE_THRESHOLD = 60;
           </div>
         }
       }
+      <span class="player__sr-only" role="status" aria-live="polite">{{ actionFeedback }}</span>
     </section>
 
     <!-- شیت پایین‌کشِ انتخاب شعر -->
@@ -445,7 +449,7 @@ const SWIPE_THRESHOLD = 60;
         flex-direction: column;
         align-items: center;
         gap: 0.75rem;
-        padding: 1rem 1rem 9.5rem;
+        padding: 0.85rem 0.9rem 12.25rem;
         overflow: hidden;
         color: #f8f5ec;
         background-color: #0f172a;
@@ -515,8 +519,47 @@ const SWIPE_THRESHOLD = 60;
         grid-column: 3;
         justify-self: end;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         gap: 0.5rem;
+      }
+
+      .player__quick-actions {
+        position: relative;
+        z-index: 4;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem;
+        width: 100%;
+        max-width: 38rem;
+      }
+
+      .player__quick-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 46px;
+        padding: 0.5rem 0.65rem;
+        color: #f8f5ec;
+        background: rgba(248, 245, 236, 0.075);
+        border: 1px solid rgba(212, 175, 55, 0.4);
+        border-radius: 13px;
+        font: inherit;
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.5;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .player__quick-action--primary {
+        background: rgba(212, 175, 55, 0.18);
+        color: #fff5ce;
+      }
+
+      .player__quick-action:hover {
+        color: #fff5ce;
+        background: rgba(212, 175, 55, 0.23);
       }
 
       .player__titles {
@@ -555,7 +598,8 @@ const SWIPE_THRESHOLD = 60;
         max-width: 100%;
         padding: 0.2rem 0.7rem;
         font: inherit;
-        font-size: 0.74rem;
+        min-height: 36px;
+        font-size: 0.82rem;
         color: #f8f5ec;
         background: rgba(248, 245, 236, 0.06);
         border: 1px solid rgba(212, 175, 55, 0.3);
@@ -574,6 +618,11 @@ const SWIPE_THRESHOLD = 60;
         border-radius: 50%;
         background: #d4af37;
         box-shadow: 0 0 6px rgba(212, 175, 55, 0.8);
+      }
+
+      .player__reciter-label {
+        flex: 0 0 auto;
+        color: #f5d87b;
       }
 
       .player__reciter-name {
@@ -868,6 +917,11 @@ const SWIPE_THRESHOLD = 60;
         will-change: transform;
       }
 
+      .player--large-text .player__verse {
+        font-size: 1.56rem;
+        line-height: 1.75;
+      }
+
       .player__verse--near {
         color: #f3ead2;
       }
@@ -890,7 +944,7 @@ const SWIPE_THRESHOLD = 60;
         display: flex;
         flex-direction: column;
         gap: 0.6rem;
-        padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
+        padding: 0.6rem 0.65rem 0.65rem;
         background: linear-gradient(
           to top,
           #0f172a 0%,
@@ -953,25 +1007,29 @@ const SWIPE_THRESHOLD = 60;
 
       .player__secondary-actions {
         display: flex;
-        align-items: center;
+        align-items: stretch;
         justify-content: center;
-        gap: 0.55rem;
+        gap: 0.4rem;
         width: 100%;
       }
 
       .player__secondary-action {
+        flex: 1 1 0;
+        min-width: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 0.35rem;
-        min-height: 1.9rem;
-        padding: 0.25rem 0.75rem;
+        min-height: 45px;
+        padding: 0.35rem 0.4rem;
         color: rgba(248, 245, 236, 0.78);
         background: rgba(248, 245, 236, 0.055);
         border: 1px solid rgba(212, 175, 55, 0.2);
         border-radius: 999px;
         font: inherit;
-        font-size: 0.72rem;
+        font-size: 0.78rem;
+        line-height: 1.4;
+        text-align: center;
         cursor: pointer;
       }
 
@@ -990,10 +1048,12 @@ const SWIPE_THRESHOLD = 60;
 
       .player__ctrl {
         display: inline-flex;
+        flex-direction: column;
+        gap: 0.1rem;
         align-items: center;
         justify-content: center;
-        width: 2.7rem;
-        height: 2.7rem;
+        width: 5rem;
+        min-height: 61px;
         font-size: 1.05rem;
         color: #f8f5ec;
         background: rgba(248, 245, 236, 0.07);
@@ -1013,9 +1073,15 @@ const SWIPE_THRESHOLD = 60;
         transform: scale(0.92);
       }
 
+      .player__ctrl-label {
+        font-size: 0.76rem;
+        line-height: 1.25;
+        white-space: nowrap;
+      }
+
       .player__ctrl--play {
-        width: 3.5rem;
-        height: 3.5rem;
+        width: 5.1rem;
+        min-height: 73px;
         font-size: 1.5rem;
         color: #0f172a;
         background: linear-gradient(135deg, #e3c75a, #d4af37);
@@ -1026,6 +1092,37 @@ const SWIPE_THRESHOLD = 60;
       .player__ctrl--play:hover {
         background: linear-gradient(135deg, #ecd16a, #d9b53a);
         transform: translateY(-1px);
+      }
+
+      .player__play-error {
+        margin: 0;
+        color: #ffe3ad;
+        font-size: 0.86rem;
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      .player__sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      @media (max-height: 720px) {
+        .player__hero { display: none; }
+        .player { gap: 0.4rem; }
+      }
+
+      @media (max-height: 580px) {
+        .player__title { font-size: 1rem; }
+        .player__bar { gap: 0.3rem; padding: 0.4rem 0.5rem; }
+        .player__ctrl { min-height: 53px; }
+        .player__ctrl--play { min-height: 60px; }
       }
 
       /* ---- نبودِ خوانش صوتی ---- */
@@ -1200,6 +1297,11 @@ export class ImmersivePlayerComponent implements OnInit {
   /** آیا شیت انتخاب شعر باز است. */
   pickerOpen = false;
 
+  /** Large print is shared with the full-text reading page. */
+  textLarge = false;
+  actionFeedback = '';
+  playbackError = '';
+
   /** گزینه‌های سرعت پخش. */
   readonly speedOptions = SPEED_OPTIONS;
 
@@ -1271,6 +1373,11 @@ export class ImmersivePlayerComponent implements OnInit {
    * «بشنو از نی» را با URL بارگذاری می‌کند.
    */
   ngOnInit(): void {
+    try {
+      this.textLarge = localStorage.getItem('molavi.reading.textSize') === 'large';
+    } catch {
+      this.textLarge = false;
+    }
     if (this.currentPoemId === null && !this.poem) {
       this.fetchDefaultPoem();
     }
@@ -1527,6 +1634,7 @@ export class ImmersivePlayerComponent implements OnInit {
   }
 
   onPlay(): void {
+    this.playbackError = '';
     this.isPlaying = true;
     this.hasEnded = false;
     this.cdr.markForCheck();
@@ -1565,7 +1673,8 @@ export class ImmersivePlayerComponent implements OnInit {
         this.hasEnded = false;
       }
       void el.play().catch(() => {
-        /* نادیده گرفتن خطای پخش */
+        this.playbackError = 'پخش شروع نشد. اینترنت را بررسی کن و دوباره تلاش کن.';
+        this.cdr.markForCheck();
       });
     } else {
       el.pause();
@@ -1666,12 +1775,27 @@ export class ImmersivePlayerComponent implements OnInit {
     return !!this.poem && this.library.isFavorite(this.poem.id);
   }
 
+  /** Toggle readable large print using the same preference as the reading page. */
+  toggleLargeText(): void {
+    this.textLarge = !this.textLarge;
+    try {
+      localStorage.setItem('molavi.reading.textSize', this.textLarge ? 'large' : 'medium');
+    } catch {
+      // The setting still works for this session if storage is unavailable.
+    }
+    this.actionFeedback = this.textLarge ? 'اندازه متن بزرگ شد.' : 'اندازه متن معمولی شد.';
+    this.cdr.markForCheck();
+  }
+
   /** ذخیره/حذف شعر جاری از علاقه‌مندی‌ها. */
   toggleFavorite(): void {
     if (!this.poem) {
       return;
     }
-    this.library.toggleFavorite(this.poem);
+    const added = this.library.toggleFavorite(this.poem);
+    this.actionFeedback = added
+      ? 'شعر به علاقه‌مندی‌ها اضافه شد.'
+      : 'شعر از علاقه‌مندی‌ها حذف شد.';
     this.cdr.markForCheck();
   }
 
@@ -1834,6 +1958,8 @@ export class ImmersivePlayerComponent implements OnInit {
     this.trackOffset = 0;
     this.hasEnded = false;
     this.loading = false;
+    this.playbackError = '';
+    this.actionFeedback = '';
     this.resumeApplied = false;
     this.lastProgressSavedAt = -1;
     this.error = null;

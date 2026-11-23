@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   EventEmitter,
+  HostListener,
   Input,
   Output,
 } from '@angular/core';
@@ -76,6 +77,7 @@ interface PickerLevel {
                     stroke-linejoin="round"
                   />
                 </svg>
+                <span>بازگشت</span>
               </button>
             } @else {
               <span class="picker__back picker__back--spacer" aria-hidden="true"></span>
@@ -95,10 +97,12 @@ interface PickerLevel {
                   stroke-linecap="round"
                 />
               </svg>
+              <span>بستن</span>
             </button>
           </header>
 
           <div class="picker__body">
+            <p class="picker__hint">برای ادامه، نام یک کتاب یا شعر را لمس کن.</p>
             @if (loading) {
               <app-loading-indicator message="در حال بارگذاری…" />
             } @else if (error) {
@@ -229,13 +233,16 @@ interface PickerLevel {
       .picker__back,
       .picker__close {
         flex: 0 0 auto;
-        width: 2.2rem;
-        height: 2.2rem;
+        min-width: 68px;
+        min-height: 46px;
+        padding: 0.35rem 0.5rem;
         display: inline-flex;
+        gap: 0.2rem;
         align-items: center;
         justify-content: center;
-        font-size: 1.2rem;
-        line-height: 1;
+        font-size: 0.84rem;
+        font-weight: 700;
+        line-height: 1.4;
         color: #f8f5ec;
         background: rgba(248, 245, 236, 0.06);
         border: 1px solid rgba(212, 175, 55, 0.25);
@@ -258,6 +265,13 @@ interface PickerLevel {
         -webkit-overflow-scrolling: touch;
       }
 
+      .picker__hint {
+        margin: 0 0 0.75rem;
+        color: #f3deb0;
+        font-size: 0.9rem;
+        line-height: 1.7;
+      }
+
       .picker__list {
         list-style: none;
         margin: 0;
@@ -269,6 +283,7 @@ interface PickerLevel {
 
       .picker__row {
         width: 100%;
+        min-height: 54px;
         display: flex;
         align-items: center;
         gap: 0.75rem;
@@ -293,9 +308,10 @@ interface PickerLevel {
       .picker__row-text {
         flex: 1 1 auto;
         min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        font-size: 1rem;
+        line-height: 1.7;
       }
 
       .picker__chev,
@@ -412,6 +428,14 @@ export class PoemPickerComponent {
   /** آیا امکان بازگشت به سطح پیشین هست. */
   get canGoBack(): boolean {
     return this.history.length > 0;
+  }
+
+  /** Escape closes the sheet even without a pointer. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.open) {
+      this.close();
+    }
   }
 
   /** بستن شیت. */

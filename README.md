@@ -52,3 +52,20 @@ https://parvizbahramib73.github.io/molavi-poetry-app/
 ## Content and licensing
 
 The app consumes data from Ganjoor. API availability does not automatically grant redistribution or commercial rights for every poem translation, recitation, recording, or artwork. Review the licence and attribution requirements for each content item before public distribution.
+
+## Accessible and simple navigation
+
+The browser app is designed for Persian-speaking users with different levels of comfort using a smartphone.
+
+- Three always-visible, text-labeled navigation options: **شنیدن** (listen), **جست‌وجو** (search), and **کتابخانه من** (personal library).
+- The player includes direct **انتخاب شعر** (choose a poem) and **خواندن متن** (read the full text) actions.
+- Buttons display their purpose in text and use larger touch targets.
+- Text can be enlarged from the player or the full-text reading page; the preference is stored locally.
+- Deleting listening history requires an explicit second confirmation.
+- Audio playback errors and lost connectivity are explained in Persian.
+
+### Usability verification
+
+Automated component tests cover the primary controls, persistence, keyboard verse selection, confirmation states, and touch-target layout. For moderated tests with real participants and the manual browser/accessibility checklist, see [the Persian usability study plan](docs/usability-test-plan-fa.md).
+
+Passing automated tests **does not** establish that human usability sessions, screen-reader audits, 200% zoom tests, or real-device compatibility have been completed.

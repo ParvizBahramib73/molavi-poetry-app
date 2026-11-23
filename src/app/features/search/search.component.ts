@@ -56,17 +56,19 @@ const GUIDANCE_MESSAGE = 'عبارت جست‌وجو باید حداقل ۲ نو
   ],
   template: `
     <section class="search" aria-label="جست‌وجوی اشعار مولوی">
-      <h2 class="search__title">جست‌وجوی اشعار مولوی</h2>
+      <h2 class="search__title">پیدا کردن شعر</h2>
+      <p class="search__hint">یک کلمه از شعر را بنویس؛ مثلاً «عشق».</p>
 
       <form class="search__form" (ngSubmit)="onSubmit()">
+        <label class="search__label" for="molavi-search-input">نام یا بخشی از شعر</label>
         <input
+          id="molavi-search-input"
           type="search"
           class="search__input"
           name="term"
           [(ngModel)]="term"
           [maxlength]="maxLength"
           placeholder="عبارت جست‌وجو را وارد کنید…"
-          aria-label="عبارت جست‌وجو"
           autocomplete="off"
         />
         <button type="submit" class="search__submit">جست‌وجو</button>
@@ -104,9 +106,14 @@ const GUIDANCE_MESSAGE = 'عبارت جست‌وجو باید حداقل ۲ نو
     `
       :host {
         display: block;
+        flex: 1 0 auto;
+        width: 100%;
+        background: #f7f1e3;
       }
 
       .search {
+        width: 100%;
+        color: #2a2118;
         padding: 1.5rem;
         max-width: 48rem;
         margin: 0 auto;
@@ -133,13 +140,31 @@ const GUIDANCE_MESSAGE = 'عبارت جست‌وجو باید حداقل ۲ نو
         background: var(--grad-gold, linear-gradient(135deg, #e3b94a, #c2982f));
       }
 
+      .search__hint {
+        margin: -0.5rem 0 1rem;
+        color: #5f5140;
+        font-size: 0.98rem;
+        line-height: 1.7;
+      }
+
       .search__form {
         display: flex;
+        align-items: end;
+        flex-wrap: wrap;
         gap: 0.6rem;
       }
 
+      .search__label {
+        flex: 0 0 100%;
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #3b3328;
+      }
+
       .search__input {
-        flex: 1;
+        flex: 1 1 8rem;
+        min-width: 0;
+        min-height: 48px;
         padding: 0.65rem 1rem;
         font: inherit;
         color: var(--ink, #2a2118);
@@ -158,7 +183,8 @@ const GUIDANCE_MESSAGE = 'عبارت جست‌وجو باید حداقل ۲ نو
       }
 
       .search__submit {
-        padding: 0.65rem 1.5rem;
+        min-height: 48px;
+        padding: 0.65rem 1.15rem;
         font: inherit;
         font-weight: 700;
         color: #fff;
@@ -206,7 +232,9 @@ const GUIDANCE_MESSAGE = 'عبارت جست‌وجو باید حداقل ۲ نو
 
       .search__result-link {
         position: relative;
-        display: block;
+        display: flex;
+        align-items: center;
+        min-height: 52px;
         padding: 0.85rem 1.1rem;
         color: var(--ink, #2a2118);
         text-decoration: none;

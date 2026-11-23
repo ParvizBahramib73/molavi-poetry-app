@@ -27,6 +27,52 @@ describe('LibraryComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('هنوز شعری ذخیره نکرده‌ای');
   });
 
+
+  it('asks before deleting listening history and preserves it on cancel', () => {
+    library.recordListening({
+      id: 17,
+      title: 'غزل',
+      fullUrl: '/moulavi/shams/gh1',
+      recitationIndex: 0,
+      positionSeconds: 19,
+      durationSeconds: 100,
+    });
+    fixture.detectChanges();
+
+    const clear = fixture.nativeElement.querySelector('.library__quiet-action') as HTMLButtonElement;
+    clear.click();
+    fixture.detectChanges();
+
+    expect(library.history().length).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('همه آخرین شنیده‌ها پاک شوند؟');
+
+    const cancel = fixture.nativeElement.querySelector('.library__cancel') as HTMLButtonElement;
+    cancel.click();
+    fixture.detectChanges();
+
+    expect(library.history().length).toBe(1);
+    expect(fixture.nativeElement.querySelector('.library__confirm')).toBeNull();
+  });
+
+  it('clears history only after the user confirms', () => {
+    library.recordListening({
+      id: 18,
+      title: 'مثنوی',
+      fullUrl: '/moulavi/masnavi/daftar1/sh1',
+      recitationIndex: 0,
+      positionSeconds: 30,
+      durationSeconds: 90,
+    });
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.library__quiet-action').click();
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.library__danger').click();
+    fixture.detectChanges();
+
+    expect(library.history().length).toBe(0);
+    expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent).toContain('تاریخچه شنیدن پاک شد.');
+  });
+
   it('renders a favorite poem added to the local library', () => {
     library.toggleFavorite({ id: 10, title: 'غزل عاشقانه', fullUrl: '/moulavi/shams/gh1' });
     fixture.detectChanges();

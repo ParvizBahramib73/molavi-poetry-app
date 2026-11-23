@@ -117,9 +117,14 @@ import { PoemTextComponent } from './poem-text.component';
     `
       :host {
         display: block;
+        flex: 1 0 auto;
+        width: 100%;
+        background: #f7f1e3;
       }
 
       .reading {
+        width: 100%;
+        color: #2a2118;
         display: flex;
         flex-direction: column;
         gap: 1.75rem;
@@ -200,6 +205,7 @@ import { PoemTextComponent } from './poem-text.component';
       }
 
       .reading__listen {
+        min-height: 48px;
         display: inline-flex;
         align-items: center;
         gap: 0.45rem;
