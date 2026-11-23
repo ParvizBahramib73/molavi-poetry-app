@@ -14,7 +14,7 @@
  */
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router, Route, provideRouter } from '@angular/router';
+import { Route, provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { AppShellComponent } from './app-shell/app-shell.component';
@@ -64,7 +64,6 @@ describe('app routes (پیکربندی مسیریابی)', () => {
 describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
   let fixture: ComponentFixture<AppShellComponent>;
   let host: HTMLElement;
-  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -74,7 +73,6 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
 
     fixture = TestBed.createComponent(AppShellComponent);
     host = fixture.nativeElement as HTMLElement;
-    router = TestBed.inject(Router);
     fixture.detectChanges();
   });
 
@@ -84,18 +82,37 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     expect(shell!.getAttribute('dir')).toBe('rtl');
   });
 
-  it('ثبت فرم نوار جست‌وجو به مسیر `/search` ناوبری می‌کند', () => {
-    const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
+  it('سه مسیر اصلی را با برچسب‌های قابل فهم نشان می‌دهد', () => {
+    const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.shell__nav-link'));
+    expect(links.length).toBe(3);
+    expect(links.map((link) => link.textContent?.trim())).toEqual([
+      'شنیدن',
+      'جست‌وجو',
+      'کتابخانه من',
+    ]);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/',
+      '/search',
+      '/library',
+    ]);
+  });
 
-    const form = host.querySelector<HTMLFormElement>('.shell__search')!;
-    const input = host.querySelector<HTMLInputElement>('.shell__search-input')!;
-    input.value = 'مولوی';
-    input.dispatchEvent(new Event('input'));
+  it('ناوبری اصلی با صفحه‌کلید قابل فوکوس است', () => {
+    const firstLink = host.querySelector<HTMLAnchorElement>('.shell__nav-link')!;
+    firstLink.focus();
+    expect(document.activeElement).toBe(firstLink);
+    expect(firstLink.tabIndex).toBeGreaterThanOrEqual(0);
+  });
+
+  it('هنگام قطع اتصال، راهنمای فارسی قابل دسترس نمایش می‌دهد', () => {
+    const component = fixture.componentInstance;
+    component.onOffline();
     fixture.detectChanges();
+    const status = host.querySelector<HTMLElement>('[role="status"]');
+    expect(status?.textContent).toContain('اینترنت قطع است');
 
-    form.dispatchEvent(new Event('submit'));
-
-    expect(navigateSpy).toHaveBeenCalled();
-    expect(navigateSpy.calls.mostRecent().args[0]).toEqual(['/search']);
+    component.onOnline();
+    fixture.detectChanges();
+    expect(host.querySelector('[role="status"]')).toBeNull();
   });
 });

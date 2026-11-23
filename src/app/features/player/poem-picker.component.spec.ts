@@ -67,6 +67,22 @@ describe('PoemPickerComponent', () => {
     component = fixture.componentInstance;
   });
 
+
+  it('shows a visible close label and closes on Escape', () => {
+    ganjoorSpy.getPoet.and.returnValue(of(makePoet()));
+    component.open = true;
+    fixture.detectChanges();
+
+    const closeButton = fixture.nativeElement.querySelector('.picker__close') as HTMLButtonElement;
+    expect(closeButton.textContent).toContain('بستن');
+
+    const closed = spyOn(component.closed, 'emit');
+    component.onEscape();
+
+    expect(component.open).toBeFalse();
+    expect(closed).toHaveBeenCalled();
+  });
+
   it('با باز شدن، آثار سطح ریشه را از getPoet بارگذاری می‌کند', () => {
     ganjoorSpy.getPoet.and.returnValue(of(makePoet()));
 

@@ -68,6 +68,17 @@ describe('SearchComponent', () => {
     fixture.detectChanges();
   }
 
+
+  it('uses a visible Persian label and example for the search field', () => {
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('#molavi-search-input') as HTMLInputElement;
+    const label = fixture.nativeElement.querySelector('label[for="molavi-search-input"]') as HTMLLabelElement;
+
+    expect(label.textContent).toContain('نام یا بخشی از شعر');
+    expect(input.type).toBe('search');
+    expect(fixture.nativeElement.textContent).toContain('مثلاً');
+  });
+
   describe('اعتبارسنجی ورودی (R5.2)', () => {
     it('عبارت کوتاه‌تر از ۲ نویسه پیام راهنما را نمایش می‌دهد و searchPoems را صدا نمی‌زند', () => {
       fixture.detectChanges();

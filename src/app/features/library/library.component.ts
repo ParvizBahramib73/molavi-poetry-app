@@ -33,9 +33,19 @@ import { PwaInstallService } from '../../core/pwa-install.service';
             <h2 id="history-title">آخرین شنیده‌ها</h2>
           </div>
           @if (library.history().length > 0) {
-            <button type="button" class="library__quiet-action" (click)="clearHistory()">پاک کردن تاریخچه</button>
+            <button type="button" class="library__quiet-action" (click)="askToClearHistory()">پاک کردن تاریخچه</button>
           }
         </div>
+
+        @if (confirmClearHistory) {
+          <div class="library__confirm" role="group" aria-label="تأیید پاک کردن تاریخچه">
+            <p>همه آخرین شنیده‌ها پاک شوند؟ این کار برنمی‌گردد.</p>
+            <div class="library__confirm-actions">
+              <button type="button" class="library__danger" (click)="clearHistory()">بله، پاک شوند</button>
+              <button type="button" class="library__cancel" (click)="cancelClearHistory()">انصراف</button>
+            </div>
+          </div>
+        }
 
         @if (library.history().length === 0) {
           <div class="library__empty">
@@ -99,6 +109,10 @@ import { PwaInstallService } from '../../core/pwa-install.service';
         }
       </section>
 
+      @if (notice) {
+        <p class="library__notice" role="status">{{ notice }}</p>
+      }
+
       <footer class="library__footer">
         داده‌های کتابخانه روی دستگاه ذخیره می‌شوند و برای استفاده از آن‌ها نیازی به ساخت حساب کاربری نیست.
       </footer>
@@ -118,7 +132,8 @@ import { PwaInstallService } from '../../core/pwa-install.service';
     }
     .library__header, .library__section { width: 100%; max-width: 38rem; margin-inline: auto; }
     .library__header { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: start; }
-    .library__back, .library__text-link { color: #e1c56b; text-decoration: none; font-size: .82rem; }
+    .library__back, .library__text-link { color: #f0d57e; text-decoration: underline; text-underline-offset: 3px; font-size: .9rem; }
+    .library__back { display: inline-flex; align-items: center; min-height: 44px; }
     .library__back { grid-column: 1 / -1; justify-self: start; }
     .library__eyebrow { margin: 0 0 .35rem; color: #d4af37; font-size: .75rem; }
     h1 { margin: 0; font-size: 1.65rem; }
@@ -127,9 +142,9 @@ import { PwaInstallService } from '../../core/pwa-install.service';
     .library__header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: .55rem; }
     .library__install, .library__primary-link {
       display: inline-flex; align-items: center; justify-content: center;
-      min-height: 2.3rem; padding: .4rem .85rem; border-radius: 999px;
+      min-height: 46px; padding: .5rem .85rem; border-radius: 999px;
       border: 1px solid rgba(212,175,55,.35); background: rgba(212,175,55,.13);
-      color: #fff7dd; font: inherit; font-size: .78rem; text-decoration: none; cursor: pointer;
+      color: #fff7dd; font: inherit; font-size: .9rem; text-decoration: none; cursor: pointer;
     }
     .library__section { margin-top: 2rem; }
     .library__section-heading { display: flex; justify-content: space-between; align-items: end; gap: .75rem; margin-bottom: .85rem; }
@@ -142,14 +157,46 @@ import { PwaInstallService } from '../../core/pwa-install.service';
     .library__item { display: flex; flex-direction: column; gap: .8rem; }
     .library__item-copy { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
     .library__item-copy strong { font-size: .95rem; }
-    .library__item-copy span, .library__empty p { color: rgba(248,245,236,.62); font-size: .75rem; }
+    .library__item-copy span, .library__empty p { color: rgba(248,245,236,.82); font-size: .91rem; }
     .library__item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
-    .library__quiet-action { padding: .25rem .4rem; color: rgba(248,245,236,.65); background: transparent; border: 0; font: inherit; font-size: .75rem; cursor: pointer; }
+    .library__quiet-action { min-height: 44px; padding: .45rem .5rem; color: #e8d4a4; background: transparent; border: 1px solid rgba(212,175,55,.25); border-radius: 10px; font: inherit; font-size: .85rem; cursor: pointer; }
     .library__empty { display: flex; flex-direction: column; align-items: center; gap: .5rem; text-align: center; padding: 1.6rem 1rem; }
     .library__empty > span { color: #d4af37; font-size: 1.6rem; }
     .library__empty p { margin: 0; line-height: 1.8; }
     .library__empty--compact { padding: 1.1rem; }
-    .library__footer { max-width: 38rem; margin: 2rem auto 0; color: rgba(248,245,236,.45); font-size: .7rem; line-height: 1.8; text-align: center; }
+    .library__footer { max-width: 38rem; margin: 2rem auto 0; color: rgba(248,245,236,.8); font-size: .82rem; line-height: 1.8; text-align: center; }
+
+    .library__confirm {
+      margin: 0 0 1rem;
+      padding: 1rem;
+      border-radius: 14px;
+      border: 1px solid rgba(239, 198, 113, .45);
+      background: #283047;
+    }
+    .library__confirm p { margin: 0 0 .75rem; line-height: 1.75; font-size: .94rem; }
+    .library__confirm-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+    .library__danger, .library__cancel {
+      min-height: 46px;
+      padding: .5rem 1rem;
+      border-radius: 12px;
+      border: 1px solid #d1b46d;
+      background: #3a2430;
+      color: #fff3dd;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .library__cancel { background: #203956; }
+    .library__notice {
+      max-width: 38rem;
+      margin: 1.2rem auto;
+      padding: .65rem .85rem;
+      border: 1px solid rgba(212,175,55,.28);
+      border-radius: 12px;
+      color: #fff1b1;
+      font-size: .9rem;
+      line-height: 1.6;
+    }
     @media (min-width: 480px) {
       .library { padding: 1.5rem 1.25rem 2rem; }
       .library__item { flex-direction: row; align-items: center; justify-content: space-between; }
@@ -158,6 +205,9 @@ import { PwaInstallService } from '../../core/pwa-install.service';
   `],
 })
 export class LibraryComponent {
+  confirmClearHistory = false;
+  notice = '';
+
   constructor(
     readonly library: PoetryLibraryService,
     readonly pwaInstall: PwaInstallService,
@@ -169,10 +219,25 @@ export class LibraryComponent {
 
   removeFavorite(poemId: number): void {
     this.library.removeFavorite(poemId);
+    this.notice = 'شعر از علاقه‌مندی‌ها حذف شد.';
+  }
+
+  askToClearHistory(): void {
+    this.confirmClearHistory = true;
+    this.notice = '';
+  }
+
+  cancelClearHistory(): void {
+    this.confirmClearHistory = false;
   }
 
   clearHistory(): void {
+    if (!this.confirmClearHistory) {
+      return;
+    }
     this.library.clearHistory();
+    this.confirmClearHistory = false;
+    this.notice = 'تاریخچه شنیدن پاک شد.';
   }
 
   resumePosition(item: ListeningHistoryEntry): number {

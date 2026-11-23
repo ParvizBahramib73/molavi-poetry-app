@@ -4,7 +4,7 @@
  * این آزمون سبک و عمل‌گرا است: پوستهٔ برنامه را رندر می‌کند و موارد زیر را
  * به‌صورت غیرشکننده (non-flaky) بررسی می‌کند:
  *  - جهت سراسری راست‌به‌چپ (`dir="rtl"`) و زبان فارسی روی ریشه.
- *  - وجود کانتینرهای واکنش‌گرا (سربرگ، نوار جست‌وجو، ناوبری، main).
+ *  - وجود کانتینرهای واکنش‌گرا (سربرگ، ناوبری، main).
  *  - نبودِ سرریز افقیِ آشکار در breakpointهای موبایل (۳۲۰px) و دسکتاپ
  *    (۱۲۸۰px) — یعنی پهنای محتوا از پهنای کانتینر فراتر نرود.
  *
@@ -56,11 +56,22 @@ describe('AppShellComponent (responsive smoke test)', () => {
     expect(shell!.getAttribute('lang')).toBe('fa');
   });
 
-  it('کانتینرهای واکنش‌گرای اصلی (سربرگ، جست‌وجو، ناوبری، main) را رندر می‌کند', () => {
+  it('کانتینرهای ناوبری و محتوای اصلی را رندر می‌کند', () => {
     expect(host.querySelector('.shell__header')).not.toBeNull();
-    expect(host.querySelector('.shell__search')).not.toBeNull();
     expect(host.querySelector('.shell__nav')).not.toBeNull();
     expect(host.querySelector('.shell__main')).not.toBeNull();
+  });
+
+  it('سه مقصد اصلی هدف لمسی حداقل ۴۴ پیکسل دارند', () => {
+    wrapper.style.width = '320px';
+    fixture.detectChanges();
+    const links = Array.from(host.querySelectorAll<HTMLElement>('.shell__nav-link'));
+    expect(links.length).toBe(3);
+    for (const link of links) {
+      const rect = link.getBoundingClientRect();
+      expect(rect.height).toBeGreaterThanOrEqual(44);
+      expect(rect.width).toBeGreaterThanOrEqual(44);
+    }
   });
 
   it('در breakpoint موبایل (۳۲۰px) سرریز افقی آشکار ایجاد نمی‌کند', () => {

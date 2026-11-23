@@ -103,7 +103,8 @@ const TEXT_SIZE_OPTIONS: ReadonlyArray<{ value: TextSize; label: string }> = [
       }
 
       .poem-text__size-btn {
-        padding: 0.3rem 0.95rem;
+        min-height: 44px;
+        padding: 0.4rem 0.8rem;
         font: inherit;
         color: var(--muted, #7a6a55);
         background: transparent;

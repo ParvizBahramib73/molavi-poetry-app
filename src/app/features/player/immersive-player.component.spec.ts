@@ -108,6 +108,53 @@ describe('ImmersivePlayerComponent', () => {
     );
   });
 
+
+  it('shows clear primary actions and readable playback button text', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+
+    const choose = fixture.nativeElement.querySelector('.player__quick-action--primary') as HTMLButtonElement;
+    const read = fixture.nativeElement.querySelector('.player__quick-actions a') as HTMLAnchorElement;
+    const play = fixture.nativeElement.querySelector('.player__ctrl--play') as HTMLButtonElement;
+
+    expect(choose.textContent).toContain('انتخاب شعر');
+    expect(read.textContent).toContain('خواندن متن');
+    expect(play.textContent).toContain('پخش');
+  });
+
+  it('saves the larger print preference for the reading view', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('button[aria-pressed="false"].player__secondary-action:last-child') as HTMLButtonElement;
+    button.click();
+    fixture.detectChanges();
+
+    expect(component.textLarge).toBeTrue();
+    expect(localStorage.getItem('molavi.reading.textSize')).toBe('large');
+    expect(fixture.nativeElement.querySelector('.player--large-text')).not.toBeNull();
+  });
+
+  it('lets keyboard users select a nearby verse', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+    const audio = fakeAudio();
+    component.audioRef = new ElementRef(audio as HTMLAudioElement);
+    component.onLoadedMetadata();
+    fixture.detectChanges();
+
+    const nearby = fixture.nativeElement.querySelectorAll('.player__verse')[1] as HTMLElement;
+    expect(nearby.getAttribute('role')).toBe('button');
+    nearby.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(component.currentVerseIndex).toBe(1);
+    expect(component.currentTime).toBe(component.timings[1]);
+  });
+
   it('should set dir="rtl" on the root element', () => {
     ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
 
