@@ -53,7 +53,7 @@ describe('app routes (پیکربندی مسیریابی)', () => {
     expect(wildcard!.redirectTo).toBe('');
   });
 
-  it('هر سه مسیر اصلی را دقیقاً یک‌بار تعریف می‌کند', () => {
+  it('مسیرهای اصلی برنامه را دقیقاً یک‌بار تعریف می‌کند', () => {
     const mainPaths = ['', 'poem/:id', 'search'];
     for (const p of mainPaths) {
       expect(routes.filter((r) => r.path === p).length).toBe(1);

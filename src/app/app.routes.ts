@@ -43,6 +43,12 @@ export const routes: Routes = [
       import('./features/search/search.component').then((m) => m.SearchComponent),
   },
   {
+    path: 'library',
+    title: 'کتابخانه من — اشعار مولوی',
+    loadComponent: () =>
+      import('./features/library/library.component').then((m) => m.LibraryComponent),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

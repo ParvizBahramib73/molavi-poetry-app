@@ -61,6 +61,7 @@ describe('ImmersivePlayerComponent', () => {
   let ganjoorSpy: jasmine.SpyObj<GanjoorService>;
 
   beforeEach(async () => {
+    localStorage.clear();
     ganjoorSpy = jasmine.createSpyObj<GanjoorService>('GanjoorService', [
       'getPoem',
       'getRecitationSync',
@@ -78,6 +79,8 @@ describe('ImmersivePlayerComponent', () => {
     fixture = TestBed.createComponent(ImmersivePlayerComponent);
     component = fixture.componentInstance;
   });
+
+  afterEach(() => localStorage.clear());
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -257,6 +260,33 @@ describe('ImmersivePlayerComponent', () => {
     expect(
       fixture.nativeElement.querySelector('.error__message')?.textContent?.trim(),
     ).toBe(apiError.messageFa);
+  });
+
+
+  it('should save the current poem to local favorites', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+
+    component.toggleFavorite();
+
+    expect(component.isCurrentFavorite).toBeTrue();
+    expect(JSON.parse(localStorage.getItem('molavi:favorites:v1') ?? '[]')[0].id).toBe(8);
+  });
+
+  it('should resume listening from the requested query-string position', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.t = '35';
+    component.id = '8';
+    fixture.detectChanges();
+
+    const audio = fakeAudio();
+    component.audioRef = new ElementRef(audio as HTMLAudioElement);
+    component.onLoadedMetadata();
+
+    expect(component.currentTime).toBe(35);
+    expect((audio as { currentTime: number }).currentTime).toBe(35);
+    expect(JSON.parse(localStorage.getItem('molavi:history:v1') ?? '[]')[0].positionSeconds).toBe(35);
   });
 
   it('should re-invoke getPoem on retry', () => {

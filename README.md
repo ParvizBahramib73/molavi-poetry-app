@@ -1,82 +1,54 @@
-# MolaviPoetryApp
+# Molavi Poetry App
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.28.
+A Persian-first poetry experience focused on reading and listening to the works of Molana Jalal al-Din Rumi.
 
-## Development server
+## Product experience
 
-To start a local development server, run:
+- Browse Molana's works and poems.
+- Read poem text in a right-to-left Persian interface.
+- Listen to available recitations with synchronized verse highlighting.
+- Switch between available recitations and control playback speed.
+- Search poems and open a dedicated reading view.
+- Save favorite poems and recent listening progress locally on the device.
+- Create and share a visual quote card from the currently highlighted verse.
+- Install the web app as a PWA. The app shell is cached for repeat visits and offline launch; live poem and audio requests still require a connection unless separately available on the device.
 
-```bash
-ng serve
-```
+## Technology
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Angular 20 and TypeScript
+- RxJS and the Ganjoor API
+- Jasmine/Karma unit tests
+- A lightweight custom service worker for the PWA shell
+- GitHub Actions for test, production build, and GitHub Pages deployment
 
-## Code scaffolding
+## Development
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+Requirements: Node.js 22 and npm.
 
 ```bash
-ng build
+npm ci
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Open `http://localhost:4200/`.
 
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## Tests and production build
 
 ```bash
-ng test
+npm run test:ci
+npm run build
 ```
 
-## Running end-to-end tests
+The CI workflow runs unit tests before the production build. Pushes to `main` deploy to GitHub Pages after both jobs succeed. Pull requests run the same verification and build jobs without deploying.
 
-For end-to-end (e2e) testing, run:
+## PWA
 
-```bash
-ng e2e
-```
+The web manifest and service worker are served from `public/`. The service worker caches the application shell and same-origin static assets. It deliberately does not cache third-party recitation audio or Ganjoor API responses.
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+For local PWA testing, use `localhost`. For production, use the HTTPS GitHub Pages URL:
 
-## Additional Resources
+https://parvizbahramib73.github.io/molavi-poetry-app/
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Content and licensing
 
-## Project layout (molavi-poetry-app)
-
-The Angular application lives in the `molavi-poetry-app/` subfolder of the workspace root,
-kept separate from the `.kiro/` spec folder for a clean layout.
-
-Source folders under `src/app/`:
-
-- `core/` — services and pure logic (e.g. `GanjoorService`, URL/scoping/verse-mapping helpers)
-- `models/` — internal data model interfaces and domain constants
-- `features/` — view components (Browse, Reading, Audio, Translations, Search)
-- `shared/` — shared/reusable components (loading, error, empty state)
-
-## Configuration notes
-
-- **HttpClient**: configured via `provideHttpClient()` in `src/app/app.config.ts`.
-- **Standalone components + routing**: enabled by the CLI scaffold (`provideRouter` in `app.config.ts`,
-  routes in `src/app/app.routes.ts`).
-- **Property-based testing**: `fast-check` is installed as a dev dependency.
-- **Single-run testing**: `ng test` is configured for single-run, headless execution
-  (`watch: false`, `browsers: ChromeHeadless` in `angular.json`). A `test:ci` script
-  (`ng test --watch=false --browsers=ChromeHeadless`) is also available.
-  Watch-based tooling (`ng serve`, watch-mode `ng test`) should be run manually by the developer.
+The app consumes data from Ganjoor. API availability does not automatically grant redistribution or commercial rights for every poem translation, recitation, recording, or artwork. Review the licence and attribution requirements for each content item before public distribution.
