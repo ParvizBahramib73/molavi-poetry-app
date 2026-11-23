@@ -1,4 +1,4 @@
-const CACHE_NAME = 'molavi-app-shell-v1';
+const CACHE_NAME = 'molavi-app-shell-v2';
 const SCOPE_URL = new URL(self.registration.scope);
 const APP_SHELL_URL = new URL('./', SCOPE_URL).toString();
 const OFFLINE_URL = new URL('offline.html', SCOPE_URL).toString();
@@ -40,10 +40,10 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .then((response) => {
+        .then(async (response) => {
           if (response.ok) {
-            const copy = response.clone();
-            void caches.open(CACHE_NAME).then((cache) => cache.put(APP_SHELL_URL, copy));
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(APP_SHELL_URL, response.clone());
           }
           return response;
         })
@@ -55,22 +55,36 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  const cacheableDestination = ['script', 'style', 'font', 'image'].includes(request.destination) ||
-    requestUrl.pathname.endsWith('/manifest.webmanifest');
+  if (requestUrl.pathname.endsWith('/manifest.webmanifest')) {
+    event.respondWith(
+      fetch(request)
+        .then(async (response) => {
+          if (response.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, response.clone());
+          }
+          return response;
+        })
+        .catch(() => caches.match(request)),
+    );
+    return;
+  }
+
+  const cacheableDestination = ['script', 'style', 'font', 'image'].includes(request.destination);
   if (!cacheableDestination) return;
 
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(request);
-      const network = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            void cache.put(request, response.clone());
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || network;
-    }),
+      if (cached) {
+        return cached;
+      }
+
+      const response = await fetch(request);
+      if (response.ok) {
+        await cache.put(request, response.clone());
+      }
+      return response;
+    }).catch(async () => (await caches.match(request)) || Response.error()),
   );
 });
