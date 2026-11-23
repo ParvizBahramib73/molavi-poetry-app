@@ -12,6 +12,8 @@ import {
 import { Router, RouterLink } from '@angular/router';
 
 import { GanjoorService } from '../../core/ganjoor.service';
+import { PoetryLibraryService } from '../../core/poetry-library.service';
+import { createPoetryQuoteImage } from '../../core/poetry-share';
 import { GanjoorApiError, Poem, Recitation, Verse } from '../../models';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/error-state/error-state.component';
@@ -137,6 +139,12 @@ const SWIPE_THRESHOLD = 60;
           </div>
 
           <div class="player__header-actions">
+            <a class="player__icon-btn player__library" routerLink="/library" aria-label="کتابخانه من">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 4.5h11.5A2.5 2.5 0 0 1 19 7v13H7.5A2.5 2.5 0 0 1 5 17.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M5 17.5A2.5 2.5 0 0 1 7.5 15H19M9 8h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </a>
             <button
               type="button"
               class="player__icon-btn player__menu"
@@ -381,6 +389,16 @@ const SWIPE_THRESHOLD = 60;
                   </svg>
                 </button>
               </div>
+              <div class="player__secondary-actions">
+                <button type="button" class="player__secondary-action" [class.player__secondary-action--active]="isCurrentFavorite" [attr.aria-pressed]="isCurrentFavorite" (click)="toggleFavorite()">
+                  <span aria-hidden="true">{{ isCurrentFavorite ? '★' : '☆' }}</span>
+                  {{ isCurrentFavorite ? 'ذخیره‌شده' : 'علاقه‌مندی' }}
+                </button>
+                <button type="button" class="player__secondary-action" (click)="shareCurrentVerse()">
+                  <span aria-hidden="true">↗</span>
+                  اشتراک بیت
+                </button>
+              </div>
             </div>
           </div>
         } @else {
@@ -391,6 +409,16 @@ const SWIPE_THRESHOLD = 60;
             <a class="player__back-link" [routerLink]="['/poem', poem.id]">
               بازگشت به متن شعر
             </a>
+            <div class="player__secondary-actions">
+              <button type="button" class="player__secondary-action" [class.player__secondary-action--active]="isCurrentFavorite" [attr.aria-pressed]="isCurrentFavorite" (click)="toggleFavorite()">
+                <span aria-hidden="true">{{ isCurrentFavorite ? '★' : '☆' }}</span>
+                {{ isCurrentFavorite ? 'ذخیره‌شده' : 'علاقه‌مندی' }}
+              </button>
+              <button type="button" class="player__secondary-action" (click)="shareCurrentVerse()">
+                <span aria-hidden="true">↗</span>
+                اشتراک بیت
+              </button>
+            </div>
           </div>
         }
       }
@@ -417,7 +445,7 @@ const SWIPE_THRESHOLD = 60;
         flex-direction: column;
         align-items: center;
         gap: 0.75rem;
-        padding: 1rem 1rem 7rem;
+        padding: 1rem 1rem 9.5rem;
         overflow: hidden;
         color: #f8f5ec;
         background-color: #0f172a;
@@ -917,8 +945,40 @@ const SWIPE_THRESHOLD = 60;
 
       .player__controls {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 0.55rem;
+      }
+
+      .player__secondary-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        width: 100%;
+      }
+
+      .player__secondary-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        min-height: 1.9rem;
+        padding: 0.25rem 0.75rem;
+        color: rgba(248, 245, 236, 0.78);
+        background: rgba(248, 245, 236, 0.055);
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        border-radius: 999px;
+        font: inherit;
+        font-size: 0.72rem;
+        cursor: pointer;
+      }
+
+      .player__secondary-action--active {
+        color: #f7dc82;
+        background: rgba(212, 175, 55, 0.15);
+        border-color: rgba(212, 175, 55, 0.5);
       }
 
       /* گروهِ انتقال (قبلی/پخش/بعدی) مرکزچین، LTR برای ترتیب استاندارد. */
@@ -1161,6 +1221,11 @@ export class ImmersivePlayerComponent implements OnInit {
   /** اشتراک جاریِ دریافت داده‌ی همگام‌سازی (برای لغو هنگام تعویض خوانش/شعر). */
   private syncSub?: { unsubscribe(): void };
 
+  /** موقعیت پخش برای ادامه شنیدن از کتابخانه محلی. */
+  private pendingResumeSeconds = 0;
+  private resumeApplied = false;
+  private lastProgressSavedAt = -1;
+
   @ViewChild('audio') audioRef?: ElementRef<HTMLAudioElement>;
   @ViewChild('lyrics') lyricsRef?: ElementRef<HTMLElement>;
   @ViewChildren('verseEl') verseEls?: QueryList<ElementRef<HTMLElement>>;
@@ -1168,6 +1233,7 @@ export class ImmersivePlayerComponent implements OnInit {
   constructor(
     private readonly ganjoor: GanjoorService,
     private readonly router: Router,
+    private readonly library: PoetryLibraryService,
     private readonly cdr: ChangeDetectorRef,
   ) {}
 
@@ -1177,6 +1243,8 @@ export class ImmersivePlayerComponent implements OnInit {
     const parsed = value !== null ? Number(value) : NaN;
     if (!Number.isFinite(parsed) || parsed <= 0) {
       this.currentPoemId = null;
+      this.pendingResumeSeconds = 0;
+      this.resumeApplied = false;
       return;
     }
     this.currentPoemId = parsed;
@@ -1188,6 +1256,14 @@ export class ImmersivePlayerComponent implements OnInit {
   set rec(value: string | number | null) {
     const parsed = value !== null && value !== undefined ? Number(value) : 0;
     this.recIndex = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  }
+
+  /** موقعیت پخش برای ادامه شنیدن؛ پس از بارگذاری metadata اعمال می‌شود. */
+  @Input()
+  set t(value: string | number | null | undefined) {
+    const parsed = value !== null && value !== undefined ? Number(value) : 0;
+    this.pendingResumeSeconds = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    this.resumeApplied = false;
   }
 
   /**
@@ -1386,6 +1462,7 @@ export class ImmersivePlayerComponent implements OnInit {
     }
     // دریافت زمان‌بندیِ دقیقِ خوانشِ جدید.
     this.loadSync();
+    this.saveListeningProgress(true);
     this.cdr.markForCheck();
   }
 
@@ -1417,6 +1494,13 @@ export class ImmersivePlayerComponent implements OnInit {
     if (!this.exactSync) {
       this.timings = computeVerseTimings(this.lyricVerses, this.duration);
     }
+    if (!this.resumeApplied) {
+      this.resumeApplied = true;
+      if (this.pendingResumeSeconds > 0) {
+        this.applySeek(this.pendingResumeSeconds);
+        this.saveListeningProgress(true);
+      }
+    }
     // اعمال سرعت پخش انتخابی بر عنصر صوت.
     if (el) {
       el.playbackRate = this.playbackRate;
@@ -1438,6 +1522,7 @@ export class ImmersivePlayerComponent implements OnInit {
     } else {
       this.currentVerseIndex = Math.max(0, index);
     }
+    this.saveListeningProgress();
     this.cdr.markForCheck();
   }
 
@@ -1449,12 +1534,14 @@ export class ImmersivePlayerComponent implements OnInit {
 
   onPause(): void {
     this.isPlaying = false;
+    this.saveListeningProgress(true);
     this.cdr.markForCheck();
   }
 
   onEnded(): void {
     this.isPlaying = false;
     this.hasEnded = true;
+    this.saveListeningProgress(true);
     this.cdr.markForCheck();
   }
 
@@ -1507,12 +1594,14 @@ export class ImmersivePlayerComponent implements OnInit {
     }
     const time = this.timings[index];
     this.applySeek(time);
+    this.saveListeningProgress(true);
   }
 
   /** اعمال جابه‌جایی از نوار پیشرفت با محدودسازی به [0, duration]. */
   onSeek(event: Event): void {
     const raw = Number((event.target as HTMLInputElement).value);
     this.applySeek(raw);
+    this.saveListeningProgress(true);
   }
 
   /** تغییر سرعت پخش و اعمال آن بر عنصر صوت. */
@@ -1570,6 +1659,56 @@ export class ImmersivePlayerComponent implements OnInit {
       this.isFullscreen = false;
     }
     this.cdr.markForCheck();
+  }
+
+  /** آیا شعر جاری در کتابخانه شخصی ذخیره شده است؟ */
+  get isCurrentFavorite(): boolean {
+    return !!this.poem && this.library.isFavorite(this.poem.id);
+  }
+
+  /** ذخیره/حذف شعر جاری از علاقه‌مندی‌ها. */
+  toggleFavorite(): void {
+    if (!this.poem) {
+      return;
+    }
+    this.library.toggleFavorite(this.poem);
+    this.cdr.markForCheck();
+  }
+
+  /** ساخت کارت تصویری از بیت فعال و اشتراک‌گذاری یا دانلود آن. */
+  async shareCurrentVerse(): Promise<void> {
+    const verse = this.lyricVerses[this.currentVerseIndex]?.text;
+    if (!this.poem || !verse) {
+      return;
+    }
+
+    try {
+      const blob = await createPoetryQuoteImage(verse, this.poem.title);
+      const file = new File([blob], 'molavi-poetry.png', { type: 'image/png' });
+      const shareNavigator = navigator as Navigator & {
+        canShare?: (data: ShareData) => boolean;
+      };
+      if (
+        typeof navigator.share === 'function' &&
+        shareNavigator.canShare?.({ files: [file] })
+      ) {
+        await navigator.share({
+          title: this.poem.title,
+          text: `${verse}\n\n— مولانا جلال‌الدین رومی`,
+          files: [file],
+        });
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'molavi-poetry.png';
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error('Could not share the poetry image.', error);
+    }
   }
 
   /** قالب‌بندی زمان به mm:ss. */
@@ -1681,6 +1820,9 @@ export class ImmersivePlayerComponent implements OnInit {
       (v) => (v.text ?? '').trim().length > 0,
     );
     this.recitation = this.pickRecitation(poem.recitations);
+    if (this.recitation) {
+      this.recIndex = Math.max(0, poem.recitations.indexOf(this.recitation));
+    }
     // بازنشانی وضعیت پخش برای شعر جدید.
     this.timings = [];
     this.exactSync = false;
@@ -1692,9 +1834,14 @@ export class ImmersivePlayerComponent implements OnInit {
     this.trackOffset = 0;
     this.hasEnded = false;
     this.loading = false;
+    this.resumeApplied = false;
+    this.lastProgressSavedAt = -1;
     this.error = null;
     this.cdr.markForCheck();
     this.scheduleFocal();
+    if (this.pendingResumeSeconds <= 0) {
+      this.saveListeningProgress(true);
+    }
     // تلاش برای دریافت زمان‌بندیِ دقیقِ همگام‌سازی از گنجور.
     this.loadSync();
   }
@@ -1715,6 +1862,29 @@ export class ImmersivePlayerComponent implements OnInit {
       return recitations[this.recIndex];
     }
     return recitations[0];
+  }
+
+  /** ذخیره موقعیت پخش در کتابخانه محلی؛ نوشتن دوره‌ای برای کاهش دسترسی به storage. */
+  private saveListeningProgress(force = false): void {
+    if (!this.poem) {
+      return;
+    }
+    if (!this.resumeApplied && this.pendingResumeSeconds > 0 && this.currentTime <= 0) {
+      return;
+    }
+    const second = Math.floor(this.currentTime);
+    if (!force && this.lastProgressSavedAt >= 0 && second - this.lastProgressSavedAt < 10) {
+      return;
+    }
+    this.lastProgressSavedAt = second;
+    this.library.recordListening({
+      id: this.poem.id,
+      title: this.poem.title,
+      fullUrl: this.poem.fullUrl,
+      recitationIndex: this.recIndex,
+      positionSeconds: this.currentTime,
+      durationSeconds: this.duration,
+    });
   }
 
   /**

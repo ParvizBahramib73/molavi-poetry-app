@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { PwaInstallService } from '../core/pwa-install.service';
 
 /**
  * پوستهٔ برنامه (App Shell).
@@ -142,7 +143,10 @@ export class AppShellComponent {
   /** عبارت واردشده در نوار جست‌وجوی پوسته. */
   protected query = '';
 
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly router: Router,
+    readonly pwaInstall: PwaInstallService,
+  ) {}
 
   /**
    * ثبت فرم جست‌وجو: ناوبری به مسیر `search` با عبارت واردشده به‌صورت پارامتر کوئری.
