@@ -78,7 +78,7 @@ import { PoemTextComponent } from './poem-text.component';
           />
         } @else if (poem) {
           @if (poem.verses.length > 0) {
-            <app-poem-text [verses]="poem.verses" />
+            <app-poem-text [verses]="poem.verses" [highlightVerseOrder]="targetVerseOrder" />
           } @else {
             <app-empty-state message="متن این شعر در دسترس نیست." />
           }
@@ -237,6 +237,17 @@ import { PoemTextComponent } from './poem-text.component';
   ],
 })
 export class ReadingViewComponent {
+  /** Optional verse order passed by a search hit to open the matching line. */
+  targetVerseOrder: number | null = null;
+
+  @Input()
+  set v(value: string | number | null | undefined) {
+    const parsed = Number(value);
+    this.targetVerseOrder = value != null && Number.isFinite(parsed) && parsed > 0
+      ? Math.floor(parsed)
+      : null;
+  }
+
   /** شعر واکشی‌شدهٔ جاری (آخرین محتوای معتبر؛ هنگام خطا حفظ می‌شود — R2.5). */
   poem: Poem | null = null;
 

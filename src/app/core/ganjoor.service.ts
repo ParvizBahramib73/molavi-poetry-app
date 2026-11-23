@@ -37,6 +37,7 @@ import {
   Recitation,
   SearchResultPage,
   Translation,
+  Verse,
   TranslationVerse,
   VerseSync,
 } from '../models';
@@ -193,6 +194,18 @@ export class GanjoorService {
 
     return this.http.get<RawPoemCompleteViewModel>(url).pipe(
       map((raw) => this.mapPoem(raw)),
+      withGanjoorErrorHandling(),
+    );
+  }
+
+  /**
+   * Lightweight verses-only endpoint for displaying real matching lines in
+   * search results. Does not download recitation metadata or translations.
+   */
+  getPoemVerses(poemId: number): Observable<Verse[]> {
+    const url = buildScopedUrl(`/api/ganjoor/poem/${poemId}/verses`);
+    return this.http.get<RawVerse[]>(url).pipe(
+      map((raw) => mapVerses(raw ?? [])),
       withGanjoorErrorHandling(),
     );
   }

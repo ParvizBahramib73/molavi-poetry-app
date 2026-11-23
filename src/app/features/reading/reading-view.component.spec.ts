@@ -80,6 +80,19 @@ describe('ReadingViewComponent', () => {
     expect(text('.reading__path')).toBe(poem.fullTitle);
   });
 
+  it('passes the matching verse order from a search result to the reading view', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.v = '2';
+    component.id = '8';
+    fixture.detectChanges();
+
+    const match = fixture.nativeElement.querySelector(
+      '.poem-text__verse--search-match',
+    ) as HTMLElement;
+    expect(match).not.toBeNull();
+    expect(match.textContent).toContain('از جدایی‌ها');
+  });
+
   it('should render every verse of the poem', () => {
     const poem = makePoem();
     ganjoorSpy.getPoem.and.returnValue(of(poem));

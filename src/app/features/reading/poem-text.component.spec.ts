@@ -51,6 +51,21 @@ describe('PoemTextComponent', () => {
     expect(buttons.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('highlights a verse linked from search results', () => {
+    component.verses = [
+      { vOrder: 1, text: 'بیت اول', position: 'RIGHT' },
+      { vOrder: 2, text: 'بشنو از نی', position: 'LEFT' },
+    ];
+    component.highlightVerseOrder = 2;
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement.querySelector(
+      '[data-verse-order="2"]',
+    ) as HTMLElement;
+    expect(element).not.toBeNull();
+    expect(element.classList.contains('poem-text__verse--search-match')).toBeTrue();
+  });
+
   it('should render each verse as a separate line in order', () => {
     component.verses = SAMPLE_VERSES;
     fixture.detectChanges();

@@ -1,0 +1,268 @@
+:host {
+  display: block;
+  flex: 1 0 auto;
+  width: 100%;
+  background: #f7f1e3;
+  color: #30271c;
+}
+
+.search {
+  width: 100%;
+  max-width: 48rem;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 1.1rem 0.95rem 2rem;
+  font-family: Vazirmatn, Tahoma, system-ui, sans-serif;
+  line-height: 1.75;
+}
+
+.search__header { margin: 0 0 1.1rem; }
+.search__eyebrow {
+  margin: 0 0 0.25rem;
+  color: #785c29;
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+.search__header h1 {
+  margin: 0;
+  color: #29241b;
+  font-size: clamp(1.4rem, 5vw, 1.85rem);
+  line-height: 1.45;
+}
+.search__subtitle {
+  margin: 0.35rem 0 0;
+  color: #645642;
+  font-size: 0.94rem;
+  line-height: 1.8;
+}
+
+.search__form {
+  padding: 0.95rem;
+  border: 1px solid #e3d6b8;
+  border-radius: 18px;
+  background: #fffaf0;
+  box-shadow: 0 3px 12px rgba(53, 42, 24, 0.06);
+}
+.search__form label {
+  display: block;
+  margin: 0 0 0.5rem;
+  color: #3b3021;
+  font-size: 0.93rem;
+  font-weight: 750;
+}
+.search__input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.search__input-wrap { position: relative; min-width: 0; }
+.search__input {
+  display: block;
+  width: 100%;
+  min-height: 54px;
+  padding: 0.6rem 0.8rem;
+  padding-inline-end: 2.5rem;
+  border: 2px solid #ccb98d;
+  border-radius: 13px;
+  outline-offset: 3px;
+  background: #fffdfa;
+  color: #241d14;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.search__input:focus {
+  outline: 3px solid rgba(37, 123, 115, 0.22);
+  border-color: #176f6b;
+}
+.search__input::placeholder { color: #786b58; opacity: 1; }
+.search__clear {
+  position: absolute;
+  inset-inline-end: 0.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 45px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #5b4d3c;
+  font: inherit;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.search__submit {
+  min-height: 54px;
+  padding: 0.55rem 0.9rem;
+  border: 0;
+  border-radius: 13px;
+  background: #167a75;
+  color: #fff;
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.search__submit:disabled,
+.search__more:disabled { opacity: 0.65; cursor: progress; }
+.search__explanation { margin: 0.55rem 0 0; color: #75654d; font-size: 0.82rem; }
+
+.search__examples { margin: 1rem 0 0; }
+.search__examples > p { margin: 0 0 0.4rem; font-size: 0.92rem; color: #5d4e3b; }
+.search__example-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.search__example {
+  min-height: 44px;
+  padding: 0.35rem 0.75rem;
+  color: #514027;
+  border: 1px solid #cdb879;
+  border-radius: 999px;
+  background: #fff8e8;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.search__guidance {
+  margin: 1rem 0;
+  padding: 0.7rem 0.9rem;
+  border-inline-start: 4px solid #8c4c30;
+  border-radius: 10px;
+  color: #713d29;
+  background: #f8e8dc;
+  font-size: 0.93rem;
+}
+.search__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.7rem;
+  margin: 1.3rem 0 0.65rem;
+  color: #514330;
+  font-size: 0.88rem;
+}
+.search__query { color: #756044; }
+.search__results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.search__card {
+  padding: 0.95rem 1rem;
+  border: 1px solid #e2d5b9;
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 2px 8px rgba(51, 38, 19, 0.06);
+}
+.search__card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+.search__card-title {
+  color: #6a5740;
+  font-size: 0.87rem;
+  font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.search__match-badge {
+  flex: 0 0 auto;
+  color: #256343;
+  background: #e5f4e9;
+  border-radius: 999px;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+.search__verse {
+  margin: 0.3rem 0 0.7rem;
+  color: #201d19;
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 2.05;
+  overflow-wrap: anywhere;
+}
+.search__verse--sample { color: #463d32; font-weight: 500; }
+.search__verse mark {
+  color: #302009;
+  background: #f9e196;
+  border-radius: 4px;
+  padding: 0 0.1rem;
+  font-weight: 800;
+}
+.search__preview-caption {
+  margin: -0.35rem 0 0.65rem;
+  font-size: 0.78rem;
+  color: #70614e;
+}
+.search__preview-loading {
+  margin: 0.5rem 0 0.85rem;
+  color: #756b5e;
+  font-size: 0.91rem;
+}
+.search__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  gap: 0.6rem;
+  margin-top: 0.45rem;
+}
+.search__result-link,
+.search__listen-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 47px;
+  padding: 0.5rem 0.6rem;
+  border-radius: 11px;
+  font-size: 0.9rem;
+  font-weight: 750;
+  text-align: center;
+  text-decoration: none;
+}
+.search__result-link { color: #fff; background: #176f6b; }
+.search__listen-link { color: #594324; background: #fbf0d6; border: 1px solid #d8bf83; }
+.search__result-link:hover,
+.search__result-link:focus-visible { color: #fff; background: #145d59; }
+.search__listen-link:hover,
+.search__listen-link:focus-visible { color: #3e2d16; background: #f5e3b9; }
+
+.search__more,
+.search__try-again {
+  display: block;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 0.9rem;
+  padding: 0.6rem 1rem;
+  border: 2px solid #176f6b;
+  border-radius: 12px;
+  background: #e4f0ec;
+  color: #145c57;
+  font: inherit;
+  font-weight: 750;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.search__empty {
+  margin: 1rem 0;
+  padding: 1.25rem 1rem;
+  border-radius: 16px;
+  border: 1px solid #dfceaa;
+  background: #fffaf0;
+}
+.search__empty strong { color: #332a20; }
+.search__empty p { color: #665642; }
+.search__loading,
+.search__error { padding: 1rem 0; }
+@media (max-width: 345px) {
+  .search { padding-inline: 0.6rem; }
+  .search__card { padding-inline: 0.75rem; }
+  .search__submit { padding-inline: 0.55rem; }
+  .search__verse { font-size: 1.03rem; }
+}

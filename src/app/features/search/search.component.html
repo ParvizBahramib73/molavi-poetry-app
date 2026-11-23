@@ -1,0 +1,148 @@
+<section
+  class="search"
+  lang="fa"
+  dir="rtl"
+  aria-labelledby="search-title"
+  [attr.aria-busy]="loading || loadingMore"
+>
+  <header class="search__header">
+    <p class="search__eyebrow">جست‌وجو در اشعار مولانا</p>
+    <h1 id="search-title">یک بیت یادت مانده؟</h1>
+    <p class="search__subtitle">حتی چند کلمه از وسط شعر را هم می‌توانی بنویسی.</p>
+  </header>
+
+  <form class="search__form" (ngSubmit)="onSubmit()" role="search">
+    <label for="molavi-search-input">بخشی از شعر را بنویس</label>
+    <div class="search__input-row">
+      <div class="search__input-wrap">
+        <input
+          id="molavi-search-input"
+          class="search__input"
+          type="search"
+          name="term"
+          [(ngModel)]="term"
+          (ngModelChange)="onTermChange($event)"
+          [maxlength]="maxLength"
+          autocomplete="off"
+          enterkeyhint="search"
+          spellcheck="false"
+          placeholder="مثلاً: بشنو از نی"
+          aria-describedby="search-explanation"
+        />
+        @if (term) {
+          <button
+            type="button"
+            class="search__clear"
+            aria-label="پاک کردن عبارت"
+            (click)="clearQuery()"
+          >×</button>
+        }
+      </div>
+      <button class="search__submit" type="submit" [disabled]="loading">جست‌وجو</button>
+    </div>
+    <p id="search-explanation" class="search__explanation">
+      نیازی نیست تمام بیت یا نام شعر را بدانی.
+    </p>
+  </form>
+
+  @if (!searched && !loading && term.trim().length === 0) {
+    <div class="search__examples" aria-label="نمونه جست‌وجو">
+      <p>می‌توانی با این‌ها شروع کنی:</p>
+      <div class="search__example-list">
+        @for (example of examples; track example) {
+          <button type="button" class="search__example" (click)="useExample(example)">
+            {{ example }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (guidanceMessage) {
+    <p class="search__guidance" role="status">{{ guidanceMessage }}</p>
+  }
+
+  @if (loading) {
+    <div class="search__loading">
+      <app-loading-indicator message="دارم شعرها را پیدا می‌کنم…" />
+    </div>
+  } @else if (error) {
+    <div class="search__error">
+      <app-error-state [message]="error.messageFa" (retry)="onRetry()" />
+    </div>
+  } @else if (searched && results.length === 0) {
+    <section class="search__empty" aria-label="نتیجه‌ای پیدا نشد">
+      <strong>نتیجه‌ای یافت نشد.</strong>
+      <p>یک یا دو کلمه از عبارت را امتحان کن؛ شاید شعر را با واژه‌های دیگری به یاد داری.</p>
+      <button type="button" class="search__try-again" (click)="focusInput()">
+        اصلاح عبارت جست‌وجو
+      </button>
+    </section>
+  } @else if (results.length > 0) {
+    <div class="search__summary" role="status">
+      <span><strong>{{ visibleResults.length }}</strong> شعر از نتایج پیدا شده</span>
+      <span class="search__query">«{{ lastSearchedTerm }}»</span>
+    </div>
+
+    <ol class="search__results" aria-label="شعرهای پیدا شده">
+      @for (item of visibleResults; track item.id) {
+        <li class="search__item">
+          <article class="search__card">
+            <header class="search__card-top">
+              <span class="search__card-title">{{ item.title }}</span>
+              @if (item.preview?.kind === 'exact') {
+                <span class="search__match-badge">عبارت پیدا شد</span>
+              }
+            </header>
+
+            @if (item.preview; as preview) {
+              <p class="search__verse" [class.search__verse--sample]="preview.kind === 'sample'">
+                @for (segment of preview.segments; track $index) {
+                  @if (segment.highlighted) {
+                    <mark>{{ segment.text }}</mark>
+                  } @else {
+                    {{ segment.text }}
+                  }
+                }
+              </p>
+              @if (preview.kind === 'sample') {
+                <p class="search__preview-caption">نمونه‌ای از متن شعر</p>
+              } @else if (preview.kind === 'words') {
+                <p class="search__preview-caption">چند واژه از عبارت تو در این بخش دیده شد</p>
+              }
+            } @else if (item.previewState === 'loading') {
+              <p class="search__preview-loading">در حال پیدا کردن بیت در متن شعر…</p>
+            } @else {
+              <p class="search__preview-loading">متن نمونه فعلاً در دسترس نیست.</p>
+            }
+
+            <div class="search__actions">
+              <a
+                class="search__result-link"
+                [routerLink]="['/poem', item.id]"
+                [queryParams]="item.preview?.kind === 'exact' || item.preview?.kind === 'words' ? { v: item.preview?.verseOrder } : {}"
+                [attr.aria-label]="'خواندن شعر ' + item.title"
+              >خواندن شعر <span aria-hidden="true">←</span></a>
+              <a
+                class="search__listen-link"
+                [routerLink]="['/poem', item.id, 'listen']"
+                [attr.aria-label]="'شنیدن شعر ' + item.title"
+              ><span aria-hidden="true">♫</span> شنیدن</a>
+            </div>
+          </article>
+        </li>
+      }
+    </ol>
+
+    @if (moreError) {
+      <p class="search__guidance" role="alert">
+        دریافت شعرهای بیشتر ممکن نشد. دوباره تلاش کن.
+      </p>
+    }
+    @if (visibleResults.length < results.length || hasMore) {
+      <button type="button" class="search__more" (click)="showMore()" [disabled]="loadingMore">
+        {{ loadingMore ? 'در حال دریافت شعرهای بیشتر…' : 'نمایش شعرهای بیشتر' }}
+      </button>
+    }
+  }
+</section>

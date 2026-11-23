@@ -4,6 +4,8 @@ import {
   Component,
   Input,
   OnInit,
+  AfterViewChecked,
+  ElementRef,
 } from '@angular/core';
 
 import { Verse } from '../../models';
@@ -63,6 +65,8 @@ const TEXT_SIZE_OPTIONS: ReadonlyArray<{ value: TextSize; label: string }> = [
         @for (verse of verses; track $index) {
           <p
             class="poem-text__verse"
+            [attr.data-verse-order]="verse.vOrder"
+            [class.poem-text__verse--search-match]="verse.vOrder === highlightVerseOrder"
             [class]="'poem-text__verse--' + verse.position.toLowerCase()"
           >
             {{ verse.text }}
@@ -171,6 +175,12 @@ const TEXT_SIZE_OPTIONS: ReadonlyArray<{ value: TextSize; label: string }> = [
         background: rgba(23, 111, 107, 0.06);
       }
 
+      .poem-text__verse--search-match {
+        background: #f9e196 !important;
+        outline: 2px solid #bc8722;
+        outline-offset: 3px;
+      }
+
       .poem-text__verse--right {
         text-align: right;
       }
@@ -190,9 +200,11 @@ const TEXT_SIZE_OPTIONS: ReadonlyArray<{ value: TextSize; label: string }> = [
     `,
   ],
 })
-export class PoemTextComponent implements OnInit {
+export class PoemTextComponent implements OnInit, AfterViewChecked {
   /** ابیات شعر؛ به همان ترتیب دریافتی رندر می‌شوند (R2.1، R2.3). */
   @Input() verses: Verse[] = [];
+  @Input() highlightVerseOrder: number | null = null;
+  private lastScrolledVerse: number | null = null;
 
   /** اندازهٔ متن انتخاب‌شدهٔ جاری. */
   textSize: TextSize = DEFAULT_TEXT_SIZE;
@@ -200,10 +212,27 @@ export class PoemTextComponent implements OnInit {
   /** گزینه‌های اندازهٔ متن برای رندر دکمه‌های کنترل. */
   readonly sizeOptions = TEXT_SIZE_OPTIONS;
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  constructor(
+    private readonly cdr: ChangeDetectorRef,
+    private readonly host: ElementRef<HTMLElement>,
+  ) {}
 
   ngOnInit(): void {
     this.textSize = this.readStoredSize();
+  }
+
+  ngAfterViewChecked(): void {
+    const targetOrder = this.highlightVerseOrder;
+    if (targetOrder === null || targetOrder === this.lastScrolledVerse) {
+      return;
+    }
+    const target = this.host.nativeElement.querySelector<HTMLElement>(
+      `[data-verse-order="${targetOrder}"]`,
+    );
+    if (target && typeof target.scrollIntoView === 'function') {
+      this.lastScrolledVerse = targetOrder;
+      target.scrollIntoView({ behavior: 'auto', block: 'center' });
+    }
   }
 
   /** تغییر اندازهٔ متن و ذخیرهٔ آن برای بازدیدهای بعدی (R7.3، R7.5). */

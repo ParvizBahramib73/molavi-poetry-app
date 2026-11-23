@@ -19,7 +19,7 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { Poem, Poet, SearchResultPage } from '../models';
+import { Poem, Poet, SearchResultPage, Verse } from '../models';
 import { GanjoorService } from './ganjoor.service';
 
 describe('GanjoorService (integration / network-level mock)', () => {
@@ -125,6 +125,23 @@ describe('GanjoorService (integration / network-level mock)', () => {
       expect(result!.recitations.length).toBe(1);
       expect(result!.recitations[0].id).toBe(1);
       expect(result!.recitations[0].mp3Url).toBe('https://x/1.mp3');
+    });
+  });
+
+  describe('getPoemVerses()', () => {
+    it('requests only poem verses and preserves the verse order', () => {
+      let verses: Verse[] | undefined;
+      service.getPoemVerses(81).subscribe((value) => (verses = value));
+
+      const req = httpMock.expectOne(
+        (r) => r.method === 'GET' && r.url.endsWith('/api/ganjoor/poem/81/verses'),
+      );
+      req.flush([
+        { vOrder: 2, text: 'بیت دوم', versePosition: 'LEFT' },
+        { vOrder: 1, text: 'بیت اول', versePosition: 'RIGHT' },
+      ]);
+
+      expect(verses?.map((value) => value.text)).toEqual(['بیت اول', 'بیت دوم']);
     });
   });
 
