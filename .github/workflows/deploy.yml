@@ -104,7 +104,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  verify:    if: github.head_ref != 'release/bazaar-hardening'
+  verify:
+    if: github.head_ref != 'release/bazaar-hardening'
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
