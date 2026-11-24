@@ -426,8 +426,17 @@ export class GanjoorService {
     return (raw ?? [])
       // حذف خوانش‌های فاقد mp3Url (R3.1).
       .filter(
-        (item): item is RawRecitationViewModel & { mp3Url: string } =>
-          typeof item?.mp3Url === 'string' && item.mp3Url.trim().length > 0,
+        (item): item is RawRecitationViewModel & { mp3Url: string } => {
+          if (typeof item?.mp3Url !== 'string' || item.mp3Url.trim().length === 0) {
+            return false;
+          }
+          try {
+            const audioUrl = new URL(item.mp3Url);
+            return audioUrl.protocol === 'https:' && !audioUrl.username && !audioUrl.password;
+          } catch {
+            return false;
+          }
+        },
       )
       .map((item) => ({
         id: item.id ?? item.audioId ?? 0,

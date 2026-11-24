@@ -14,7 +14,7 @@
  */
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Route, provideRouter } from '@angular/router';
+import { Route, Router, provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { AppShellComponent } from './app-shell/app-shell.component';
@@ -74,7 +74,12 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
 
     fixture = TestBed.createComponent(AppShellComponent);
     host = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(host);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    host.remove();
   });
 
   it('جهت سراسری راست‌به‌چپ (`dir="rtl"`) را روی ریشهٔ پوسته اعمال می‌کند', () => {
@@ -147,5 +152,25 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     component.onOnline();
     fixture.detectChanges();
     expect(host.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it('Android Back closes the hamburger menu without navigating away', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = spyOn(router, 'navigateByUrl').and.resolveTo(true);
+    fixture.componentInstance.menuOpen = true;
+
+    (fixture.componentInstance as unknown as { handleBack(): void }).handleBack();
+
+    expect(fixture.componentInstance.menuOpen).toBeFalse();
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it('Android Back does not exit from the player home', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = spyOn(router, 'navigateByUrl').and.resolveTo(true);
+
+    (fixture.componentInstance as unknown as { handleBack(): void }).handleBack();
+
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 });

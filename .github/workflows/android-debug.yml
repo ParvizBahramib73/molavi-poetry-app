@@ -52,12 +52,6 @@ jobs:
       - name: Install existing Angular dependencies
         run: npm ci
 
-      - name: Install patched Angular and Capacitor dependencies
-        run: |
-          npm install --package-lock-only --force --save-exact --no-audit --no-fund @angular/common@20.3.35 @angular/compiler@20.3.35 @angular/core@20.3.35 @angular/forms@20.3.35 @angular/platform-browser@20.3.35 @angular/router@20.3.35 @capacitor/core@8.0.0 @capacitor/app@8.0.0
-          npm install --package-lock-only --force --save-dev --save-exact --no-audit --no-fund @angular/build@20.3.35 @angular/cli@20.3.35 @angular/compiler-cli@20.3.35
-          npm ci
-
       # The first APK pilot is isolated from the web project's lockfile.
       # These three native packages are pinned to the SAME Capacitor release.
       # A native platform lockfile will be committed before store release.
@@ -81,6 +75,10 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+          node scripts/harden-android-project.mjs
+          grep -q 'android:usesCleartextTraffic="false"' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:networkSecurityConfig="@xml/network_security_config"' android/app/src/main/AndroidManifest.xml
+          grep -q 'cleartextTrafficPermitted="false"' android/app/src/main/res/xml/network_security_config.xml
           npx capacitor-assets generate --android
 
       - name: Verify Android app configuration

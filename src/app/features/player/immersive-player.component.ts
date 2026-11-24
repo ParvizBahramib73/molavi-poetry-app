@@ -1368,6 +1368,8 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   private pendingResumeSeconds = 0;
   private resumeApplied = false;
   private lastProgressSavedAt = -1;
+  private hasExplicitResumeInput = false;
+  private hasExplicitRecitationInput = false;
 
   @ViewChild('audio') audioRef?: ElementRef<HTMLAudioElement>;
   @ViewChild('lyrics') lyricsRef?: ElementRef<HTMLElement>;
@@ -1385,11 +1387,29 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   set id(value: string | null) {
     const parsed = value !== null ? Number(value) : NaN;
     if (!Number.isFinite(parsed) || parsed <= 0) {
+      if (this.poem) this.saveListeningProgress(true);
       this.currentPoemId = null;
-      this.pendingResumeSeconds = 0;
+      if (!this.hasExplicitResumeInput) this.pendingResumeSeconds = 0;
+      if (!this.hasExplicitRecitationInput) this.recIndex = 0;
       this.resumeApplied = false;
       return;
     }
+
+    // Route components may be reused when only the poem ID changes. Persist the
+    // outgoing audio position before the new poem replaces the current model.
+    if (this.poem && this.poem.id !== parsed) {
+      this.saveListeningProgress(true);
+      const previousAudio = this.audioRef?.nativeElement;
+      if (previousAudio && !previousAudio.paused) previousAudio.pause();
+      this.isPlaying = false;
+      this.completionPromptOpen = false;
+      this.pickerOpen = false;
+      this.recSheetOpen = false;
+      if (!this.hasExplicitResumeInput) this.pendingResumeSeconds = 0;
+      if (!this.hasExplicitRecitationInput) this.recIndex = 0;
+      this.resumeApplied = false;
+    }
+
     this.currentPoemId = parsed;
     this.fetchPoem(parsed);
   }
@@ -1397,6 +1417,7 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   /** اندیس خوانش انتخابی (اختیاری، پیش‌فرض ۰). */
   @Input()
   set rec(value: string | number | null) {
+    this.hasExplicitRecitationInput = value !== null && value !== undefined;
     const parsed = value !== null && value !== undefined ? Number(value) : 0;
     this.recIndex = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
   }
@@ -1404,6 +1425,7 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   /** موقعیت پخش برای ادامه شنیدن؛ پس از بارگذاری metadata اعمال می‌شود. */
   @Input()
   set t(value: string | number | null | undefined) {
+    this.hasExplicitResumeInput = value !== null && value !== undefined;
     const parsed = value !== null && value !== undefined ? Number(value) : 0;
     this.pendingResumeSeconds = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
     this.resumeApplied = false;
@@ -2114,11 +2136,22 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
     this.actionFeedback = '';
     this.resumeApplied = false;
     this.lastProgressSavedAt = -1;
+    this.hasExplicitResumeInput = false;
+    this.hasExplicitRecitationInput = false;
     this.error = null;
     this.cdr.markForCheck();
     this.scheduleFocal();
     if (this.pendingResumeSeconds <= 0) {
-      this.saveListeningProgress(true);
+      // Do not read audioRef here: on route reuse it can still reference the
+      // previous poem's media element until Angular applies the new [src].
+      this.library.recordListening({
+        id: poem.id,
+        title: poem.title,
+        fullUrl: poem.fullUrl,
+        recitationIndex: this.recIndex,
+        positionSeconds: 0,
+        durationSeconds: 0,
+      });
     }
     // تلاش برای دریافت زمان‌بندیِ دقیقِ همگام‌سازی از گنجور.
     this.loadSync();

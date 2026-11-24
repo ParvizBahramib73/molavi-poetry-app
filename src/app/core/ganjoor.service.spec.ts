@@ -178,10 +178,16 @@ describe('GanjoorService (unit / network-level mock)', () => {
         // فضای خالی نیز نامعتبر تلقی می‌شود.
         { id: 4, audioTitle: 'خوانش چهار', audioArtist: 'هنرمند د', mp3Url: '   ' },
         { id: 5, audioTitle: 'خوانش پنج', audioArtist: 'هنرمند ه', mp3Url: 'https://x/5.mp3' },
+        // منابع ناامن یا نامعتبر نباید به عنصر audio برسند.
+        { id: 6, audioTitle: 'HTTP', audioArtist: 'هنرمند و', mp3Url: 'http://x/6.mp3' },
+        { id: 7, audioTitle: 'JavaScript', audioArtist: 'هنرمند ز', mp3Url: 'javascript:alert(1)' },
+        { id: 8, audioTitle: 'Data URL', audioArtist: 'هنرمند ح', mp3Url: 'data:audio/mpeg;base64,AAAA' },
+        { id: 9, audioTitle: 'Relative', audioArtist: 'هنرمند ط', mp3Url: '/audio/9.mp3' },
+        { id: 10, audioTitle: 'Credentials', audioArtist: 'هنرمند ی', mp3Url: 'https://user:pass@x/10.mp3' },
       ]);
 
       expect(result).toBeDefined();
-      // تنها خوانش‌های دارای mp3Url معتبر باید باقی بمانند.
+      // فقط URLهای مطلق HTTPS و فاقد credential باقی می‌مانند.
       expect(result!.map((r) => r.id)).toEqual([1, 5]);
       expect(result![0].audioTitle).toBe('خوانش یک');
       expect(result![0].audioArtist).toBe('هنرمند الف');
