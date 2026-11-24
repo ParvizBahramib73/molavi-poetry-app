@@ -15,7 +15,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   template: `
     <div class="shell" dir="rtl" lang="fa">
       <header class="shell__header">
-        <span class="shell__brand">مولوی؛ بخوان و بشنو</span>
+        <span class="shell__brand">بشنو بخوان — شعر مولوی</span>
       </header>
 
       <nav class="shell__nav" aria-label="بخش‌های اصلی برنامه"

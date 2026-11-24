@@ -40,7 +40,7 @@ describe('FirstRunTourComponent (Persian first-use guide)', () => {
     expect(dialog.getAttribute('dir')).toBe('rtl');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(dialog.textContent).toContain('مرحله 1 از 5');
-    expect(dialog.textContent).toContain('به مولوی خوش آمدی');
+    expect(dialog.textContent).toContain('به بشنو بخوان خوش آمدی');
   });
 
   it('explains the actual listen/search/reading/favorites workflows in five steps', () => {
@@ -48,7 +48,7 @@ describe('FirstRunTourComponent (Persian first-use guide)', () => {
     fixture.detectChanges();
 
     const expected = [
-      'به مولوی خوش آمدی',
+      'به بشنو بخوان خوش آمدی',
       'به شعر گوش بده',
       'شعر را پیدا کن',
       'متن شعر را راحت بخوان',

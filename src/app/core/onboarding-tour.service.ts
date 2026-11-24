@@ -15,7 +15,7 @@ export interface OnboardingStep {
 
 const STEPS: readonly OnboardingStep[] = [
   {
-    title: 'به مولوی خوش آمدی!',
+    title: 'به بشنو بخوان خوش آمدی!',
     explanation: 'اینجا می‌توانی شعرهای مولانا را بخوانی و به صدای شعرها گوش بدهی.',
     tip: 'لازم نیست حساب بسازی. فقط شروع کن.',
     symbol: '✦',

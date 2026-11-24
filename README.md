@@ -1,4 +1,7 @@
-# Molavi Poetry App
+# بشنو بخوان | شعر مولوی
+
+شعر را بخوان، مثل موسیقی بشنو — بخوان، بشنو، لذت ببر.
+
 
 A Persian-first poetry experience focused on reading and listening to the works of Molana Jalal al-Din Rumi.
 
@@ -104,3 +107,11 @@ require network access or an account. Users can reopen it any time from
 Automated tests cover first visit, dismissal persistence, replay, navigation,
 keyboard Escape/focus trapping, accessible RTL dialog, and large tap targets.
 Read [the Persian onboarding acceptance and accessibility plan](docs/first-run-tour-fa.md).
+
+## Brand assets / هویت بصری
+
+- آیکون اصلی: `assets/icon.svg` (همسان با `public/icons/beshno-bekhan.svg`).
+- ساخت PNGهای ۱۹۲ و ۵۱۲ پیکسلی وب و ورودی آیکون/اسپلش اندروید: `node scripts/generate-brand-assets.mjs` (نیازمند Sharp).
+- GitHub Actions پیش از Build، دارایی‌ها را تولید می‌کند و بعد از Build وجودشان را بررسی می‌کند.
+- نام نمایشی برنامه و مارکت: **بشنو بخوان** / **بشنو بخوان | شعر مولوی**.
+- شناسه فنی اندروید برای حفظ مسیر به‌روزرسانی تغییر نکرده است.
