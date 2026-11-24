@@ -108,6 +108,9 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
   it('ناوبری اصلی بعد از بستن تور با صفحه‌کلید قابل فوکوس است', () => {
     TestBed.inject(OnboardingTourService).dismiss();
     fixture.detectChanges();
+    const menuButton = host.querySelector<HTMLButtonElement>('.shell__menu-button')!;
+    menuButton.click();
+    fixture.detectChanges();
     const firstLink = host.querySelector<HTMLAnchorElement>('.shell__nav-link')!;
     firstLink.focus();
     expect(document.activeElement).toBe(firstLink);
@@ -126,8 +129,12 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
 
     tour.dismiss();
     fixture.detectChanges();
-    expect(nav.hasAttribute('inert')).toBeFalse();
+    expect(nav.hasAttribute('inert')).toBeTrue();
     expect(main.hasAttribute('inert')).toBeFalse();
+
+    host.querySelector<HTMLButtonElement>('.shell__menu-button')!.click();
+    fixture.detectChanges();
+    expect(nav.hasAttribute('inert')).toBeFalse();
   });
 
   it('هنگام قطع اتصال، راهنمای فارسی قابل دسترس نمایش می‌دهد', () => {
