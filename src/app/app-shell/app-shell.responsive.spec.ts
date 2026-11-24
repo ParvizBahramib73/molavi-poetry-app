@@ -58,8 +58,20 @@ describe('AppShellComponent (responsive smoke test)', () => {
 
   it('کانتینرهای ناوبری و محتوای اصلی را رندر می‌کند', () => {
     expect(host.querySelector('.shell__header')).not.toBeNull();
+    expect(host.querySelector('.shell__menu-button')).not.toBeNull();
     expect(host.querySelector('.shell__nav')).not.toBeNull();
     expect(host.querySelector('.shell__main')).not.toBeNull();
+  });
+
+  it('منوی همبرگری را باز و بسته می‌کند', () => {
+    const button = host.querySelector<HTMLButtonElement>('.shell__menu-button')!;
+    button.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.menuOpen).toBeTrue();
+    expect(host.querySelector('.shell__nav--open')).not.toBeNull();
+    button.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.menuOpen).toBeFalse();
   });
 
   it('سه مقصد اصلی هدف لمسی حداقل ۴۴ پیکسل دارند', () => {

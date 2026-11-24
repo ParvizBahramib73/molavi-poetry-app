@@ -33,6 +33,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install native back-button bridge for type resolution
+        run: npm install --no-save --no-package-lock @capacitor/app@8.0.0
+
+      - name: Run dependency security audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Run unit tests
         run: npm run test:ci -- --no-progress
 
@@ -54,7 +60,7 @@ jobs:
         run: npm ci
 
       - name: Install pinned icon renderer
-        run: npm install --no-save --no-package-lock sharp@0.34.3
+        run: npm install --no-save --no-package-lock sharp@0.34.3 @capacitor/app@8.0.0
 
       - name: Generate branded web/PWA icons
         run: node scripts/generate-brand-assets.mjs

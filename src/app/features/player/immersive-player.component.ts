@@ -2,8 +2,10 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  HostListener,
   ElementRef,
   Input,
+  OnDestroy,
   OnInit,
   QueryList,
   ViewChild,
@@ -399,6 +401,15 @@ const SWIPE_THRESHOLD = 60;
                   <span aria-hidden="true">آ+</span> {{ textLarge ? 'متن معمولی' : 'متن درشت' }}
                 </button>
               </div>
+              <div class="player__playback-settings">
+                <label for="completion-behavior">بعد از پایان شعر</label>
+                <select id="completion-behavior" [value]="completionBehavior" (change)="onCompletionBehaviorChange($event)">
+                  <option value="ask">از من بپرس</option>
+                  <option value="next">پخش شعر بعدی</option>
+                  <option value="repeat">تکرار همین شعر</option>
+                  <option value="shuffle">پخش تصادفی ذخیره‌ها</option>
+                </select>
+              </div>
               @if (playbackError) {
                 <p class="player__play-error" role="alert">{{ playbackError }}</p>
               }
@@ -424,6 +435,20 @@ const SWIPE_THRESHOLD = 60;
             </div>
           </div>
         }
+      }
+      @if (completionPromptOpen) {
+        <div class="player__completion-overlay" role="dialog" aria-modal="true" aria-labelledby="completion-title">
+          <div class="player__completion-card">
+            <span class="player__completion-note" aria-hidden="true">♫</span>
+            <h2 id="completion-title">به پایان این شعر رسیدیم</h2>
+            <p>دوست داری شعر بعدی را بشنوی یا همین شعر را دوباره پخش کنیم؟</p>
+            <div class="player__completion-actions">
+              <button type="button" class="player__completion-primary" (click)="continueToNextPoem()">شعر بعدی</button>
+              <button type="button" class="player__completion-secondary" (click)="repeatCurrentPoem()">تکرار همین شعر</button>
+              <button type="button" class="player__completion-dismiss" (click)="dismissCompletion()">فعلاً کافی است</button>
+            </div>
+          </div>
+        </div>
       }
       <span class="player__sr-only" role="status" aria-live="polite">{{ actionFeedback }}</span>
     </section>
@@ -1102,6 +1127,18 @@ const SWIPE_THRESHOLD = 60;
         text-align: center;
       }
 
+      .player__playback-settings { display: flex; align-items: center; justify-content: center; gap: .55rem; width: 100%; color: rgba(248,245,236,.76); font-size: .78rem; }
+      .player__playback-settings select { max-width: 65%; min-height: 38px; padding: .3rem .65rem; color: #f8f5ec; background: #17243e; border: 1px solid rgba(212,175,55,.35); border-radius: 10px; font: inherit; }
+      .player__completion-overlay { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1.2rem; background: rgba(3,7,18,.82); backdrop-filter: blur(8px); }
+      .player__completion-card { width: min(100%, 340px); padding: 1.35rem; text-align: center; color: #f8f5ec; background: linear-gradient(160deg,#1b2944,#101a30); border: 1px solid rgba(212,175,55,.42); border-radius: 22px; box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+      .player__completion-note { color: #f4d77f; font-size: 2rem; }
+      .player__completion-card h2 { margin: .35rem 0; color: #ffe7a0; font-size: 1.15rem; }
+      .player__completion-card p { margin: .4rem 0 1rem; color: #d4d9e4; font-size: .88rem; line-height: 1.8; }
+      .player__completion-actions { display: flex; flex-direction: column; gap: .55rem; }
+      .player__completion-actions button { min-height: 46px; padding: .55rem .8rem; border-radius: 12px; font: inherit; font-weight: 700; cursor: pointer; }
+      .player__completion-primary { color: #101827; background: linear-gradient(135deg,#f0d779,#d4af37); border: 0; }
+      .player__completion-secondary { color: #fff2c2; background: rgba(212,175,55,.12); border: 1px solid rgba(212,175,55,.4); }
+      .player__completion-dismiss { color: #c7cedb; background: transparent; border: 1px solid rgba(255,255,255,.12); }
       .player__sr-only {
         position: absolute;
         width: 1px;
@@ -1245,7 +1282,7 @@ const SWIPE_THRESHOLD = 60;
     `,
   ],
 })
-export class ImmersivePlayerComponent implements OnInit {
+export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   /** شعر واکشی‌شدهٔ جاری. */
   poem: Poem | null = null;
 
@@ -1287,6 +1324,10 @@ export class ImmersivePlayerComponent implements OnInit {
 
   /** سرعت پخش جاری. */
   playbackRate = 1;
+
+  /** رفتار انتخاب‌شده پس از پایان شعر. */
+  completionBehavior: 'ask' | 'next' | 'repeat' | 'shuffle' = 'ask';
+  completionPromptOpen = false;
 
   /** وضعیت تمام‌صفحه (Fullscreen). */
   isFullscreen = false;
@@ -1378,8 +1419,108 @@ export class ImmersivePlayerComponent implements OnInit {
     } catch {
       this.textLarge = false;
     }
+    try {
+      const stored = localStorage.getItem('beshno:completion-behavior:v1');
+      if (stored === 'ask' || stored === 'next' || stored === 'repeat' || stored === 'shuffle') {
+        this.completionBehavior = stored;
+      }
+    } catch { /* Keep the safe default for this session. */ }
+
     if (this.currentPoemId === null && !this.poem) {
-      this.fetchDefaultPoem();
+      const last = this.library.history()[0];
+      if (last && last.id > 0) {
+        this.currentPoemId = last.id;
+        this.recIndex = last.recitationIndex;
+        this.pendingResumeSeconds = last.positionSeconds;
+        this.resumeApplied = false;
+        this.fetchPoem(last.id);
+      } else {
+        this.fetchDefaultPoem();
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.saveListeningProgress(true);
+    this.syncSub?.unsubscribe();
+  }
+
+  @HostListener('window:pagehide')
+  onPageHide(): void { this.saveListeningProgress(true); }
+
+  @HostListener('document:visibilitychange')
+  onVisibilityChange(): void {
+    if (document.visibilityState === 'hidden') this.saveListeningProgress(true);
+  }
+
+  @HostListener('window:beshno:back', ['$event'])
+  onNativeBack(event: CustomEvent<{ handled: boolean }>): void {
+    this.saveListeningProgress(true);
+    if (this.pickerOpen || this.recSheetOpen || this.completionPromptOpen) {
+      this.pickerOpen = false;
+      this.recSheetOpen = false;
+      this.completionPromptOpen = false;
+      event.detail.handled = true;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onCompletionBehaviorChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value !== 'ask' && value !== 'next' && value !== 'repeat' && value !== 'shuffle') return;
+    this.completionBehavior = value;
+    try { localStorage.setItem('beshno:completion-behavior:v1', value); } catch { /* Session-only setting. */ }
+    this.actionFeedback = 'تنظیم پایان شعر ذخیره شد.';
+    this.cdr.markForCheck();
+  }
+
+  continueToNextPoem(): void {
+    this.completionPromptOpen = false;
+    if (this.poem?.nextPoem?.id) {
+      this.goNextPoem();
+      return;
+    }
+    const candidate = this.library.favorites().find((item) => item.id !== this.poem?.id);
+    if (candidate) void this.router.navigate(['/poem', candidate.id, 'listen']);
+    else this.actionFeedback = 'شعر بعدی در دسترس نیست.';
+    this.cdr.markForCheck();
+  }
+
+  repeatCurrentPoem(): void {
+    this.completionPromptOpen = false;
+    const audio = this.audioRef?.nativeElement;
+    this.hasEnded = false;
+    this.currentTime = 0;
+    this.currentVerseIndex = 0;
+    if (audio) {
+      audio.currentTime = 0;
+      void audio.play().catch(() => {
+        this.playbackError = 'پخش دوباره شروع نشد. دوباره تلاش کن.';
+        this.cdr.markForCheck();
+      });
+    }
+    this.saveListeningProgress(true);
+    this.cdr.markForCheck();
+  }
+
+  dismissCompletion(): void {
+    this.completionPromptOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  private playRandomSavedPoem(): void {
+    const choices = new Map<number, { id: number }>();
+    for (const item of [...this.library.favorites(), ...this.library.history()]) {
+      if (item.id > 0 && item.id !== this.poem?.id) choices.set(item.id, item);
+    }
+    const available = [...choices.values()];
+    if (available.length > 0) {
+      const chosen = available[Math.floor(Math.random() * available.length)];
+      void this.router.navigate(['/poem', chosen.id, 'listen']);
+    } else if (this.poem?.nextPoem?.id) {
+      this.goNextPoem();
+    } else {
+      this.completionPromptOpen = true;
     }
   }
 
@@ -1650,6 +1791,16 @@ export class ImmersivePlayerComponent implements OnInit {
     this.isPlaying = false;
     this.hasEnded = true;
     this.saveListeningProgress(true);
+    if (this.completionBehavior === 'repeat') {
+      this.repeatCurrentPoem();
+    } else if (this.completionBehavior === 'next') {
+      if (this.poem?.nextPoem?.id) this.goNextPoem();
+      else this.completionPromptOpen = true;
+    } else if (this.completionBehavior === 'shuffle') {
+      this.playRandomSavedPoem();
+    } else {
+      this.completionPromptOpen = true;
+    }
     this.cdr.markForCheck();
   }
 
@@ -1994,6 +2145,11 @@ export class ImmersivePlayerComponent implements OnInit {
   private saveListeningProgress(force = false): void {
     if (!this.poem) {
       return;
+    }
+    const audio = this.audioRef?.nativeElement;
+    if (audio) {
+      if (Number.isFinite(audio.currentTime)) this.currentTime = audio.currentTime;
+      if (Number.isFinite(audio.duration)) this.duration = audio.duration;
     }
     if (!this.resumeApplied && this.pendingResumeSeconds > 0 && this.currentTime <= 0) {
       return;
