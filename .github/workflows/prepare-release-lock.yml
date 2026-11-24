@@ -1,9 +1,7 @@
 name: Prepare release dependency lockfile
 
 on:
-  push:
-    branches: [release/bazaar-hardening]
-  pull_request:
+  pull_request_target:
     branches: [main]
     types: [opened, synchronize, reopened]
 
@@ -11,22 +9,24 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-lock-${{ github.ref }}
+  group: release-lock-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   lock-and-verify:
-    if: github.head_ref == 'release/bazaar-hardening' || github.ref == 'refs/heads/release/bazaar-hardening'
+    if: github.event.pull_request.head.ref == 'release/bazaar-hardening' && github.event.pull_request.head.repo.full_name == github.repository
     name: Resolve patched dependencies and verify release candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     permissions:
       contents: write
     steps:
-      - name: Checkout release branch
+      - name: Checkout trusted release branch without persisting credentials
         uses: actions/checkout@v4
         with:
-          ref: release/bazaar-hardening
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -35,7 +35,7 @@ jobs:
           cache: npm
 
       - name: Resolve exact direct dependency pins into the lockfile
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --no-progress
 
       - name: Apply non-breaking transitive advisory fixes
         shell: bash
@@ -77,13 +77,16 @@ jobs:
 
       - name: Commit generated lockfile to the release branch
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if ! git diff --quiet -- package-lock.json; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore(deps): lock patched release dependency graph"
-            git push origin HEAD:refs/heads/release/bazaar-hardening
+            git -c core.hooksPath=/dev/null add package-lock.json
+            git -c core.hooksPath=/dev/null commit -m "chore(deps): lock patched release dependency graph"
+            AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w 0)
+            git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $AUTH" push origin HEAD:refs/heads/release/bazaar-hardening
           else
             echo "package-lock.json is already synchronized."
           fi
