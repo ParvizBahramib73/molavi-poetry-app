@@ -3,6 +3,9 @@ name: Prepare release dependency lockfile
 on:
   push:
     branches: [release/bazaar-hardening]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -13,6 +16,7 @@ concurrency:
 
 jobs:
   lock-and-verify:
+    if: github.head_ref == 'release/bazaar-hardening' || github.ref == 'refs/heads/release/bazaar-hardening'
     name: Resolve patched dependencies and verify release candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 40
