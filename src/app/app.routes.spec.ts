@@ -18,6 +18,7 @@ import { Route, provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { AppShellComponent } from './app-shell/app-shell.component';
+import { OnboardingTourService } from './core/onboarding-tour.service';
 
 /** کمک‌کنندهٔ یافتن یک مسیر بر اساس `path`. */
 function findRoute(path: string): Route | undefined {
@@ -97,11 +98,29 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     ]);
   });
 
-  it('ناوبری اصلی با صفحه‌کلید قابل فوکوس است', () => {
+  it('ناوبری اصلی بعد از بستن تور با صفحه‌کلید قابل فوکوس است', () => {
+    TestBed.inject(OnboardingTourService).dismiss();
+    fixture.detectChanges();
     const firstLink = host.querySelector<HTMLAnchorElement>('.shell__nav-link')!;
     firstLink.focus();
     expect(document.activeElement).toBe(firstLink);
     expect(firstLink.tabIndex).toBeGreaterThanOrEqual(0);
+  });
+
+  it('در زمان تور آموزشی، ناوبری زمینه غیرفعال است و بعد دوباره فعال می‌شود', () => {
+    const tour = TestBed.inject(OnboardingTourService);
+    tour.replay();
+    fixture.detectChanges();
+
+    const nav = host.querySelector<HTMLElement>('.shell__nav')!;
+    const main = host.querySelector<HTMLElement>('.shell__main')!;
+    expect(nav.hasAttribute('inert')).toBeTrue();
+    expect(main.hasAttribute('inert')).toBeTrue();
+
+    tour.dismiss();
+    fixture.detectChanges();
+    expect(nav.hasAttribute('inert')).toBeFalse();
+    expect(main.hasAttribute('inert')).toBeFalse();
   });
 
   it('هنگام قطع اتصال، راهنمای فارسی قابل دسترس نمایش می‌دهد', () => {
