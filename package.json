@@ -52,5 +52,9 @@
     "@capacitor/cli": "8.6.2",
     "@capacitor/assets": "4.0.0",
     "sharp": "0.35.5"
+  },
+  "overrides": {
+    "glob": "14.0.6",
+    "minimatch": "11.0.8"
   }
 }
