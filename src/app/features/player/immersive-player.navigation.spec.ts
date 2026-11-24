@@ -55,6 +55,7 @@ describe('ImmersivePlayerComponent — استوری‌وار (پیش‌فرض/خ
   let ganjoorSpy: jasmine.SpyObj<GanjoorService>;
 
   beforeEach(async () => {
+    localStorage.clear();
     ganjoorSpy = jasmine.createSpyObj<GanjoorService>('GanjoorService', [
       'getPoem',
       'getPoemByUrl',
@@ -75,6 +76,8 @@ describe('ImmersivePlayerComponent — استوری‌وار (پیش‌فرض/خ
     fixture = TestBed.createComponent(ImmersivePlayerComponent);
     component = fixture.componentInstance;
   });
+
+  afterEach(() => localStorage.clear());
 
   it('هنگام نبودِ id، شعر پیش‌فرض «بشنو از نی» را با getPoemByUrl بارگذاری می‌کند', () => {
     ganjoorSpy.getPoemByUrl.and.returnValue(of(makePoem()));

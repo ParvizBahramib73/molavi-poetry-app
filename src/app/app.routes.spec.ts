@@ -90,12 +90,12 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     expect(icon?.getAttribute('src')).toBe('icons/beshno-bekhan.svg');
   });
 
-  it('سه مسیر اصلی را با برچسب‌های قابل فهم نشان می‌دهد', () => {
+  it('سه مقصد اصلی را داخل منوی همبرگری با برچسب‌های قابل فهم نشان می‌دهد', () => {
     const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.shell__nav-link'));
     expect(links.length).toBe(3);
     expect(links.map((link) => link.textContent?.trim())).toEqual([
-      'شنیدن',
-      'جست‌وجو',
+      'شنیدن و پخش شعر',
+      'جست‌وجوی شعر',
       'کتابخانه من',
     ]);
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
@@ -107,6 +107,9 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
 
   it('ناوبری اصلی بعد از بستن تور با صفحه‌کلید قابل فوکوس است', () => {
     TestBed.inject(OnboardingTourService).dismiss();
+    fixture.detectChanges();
+    const menuButton = host.querySelector<HTMLButtonElement>('.shell__menu-button')!;
+    menuButton.click();
     fixture.detectChanges();
     const firstLink = host.querySelector<HTMLAnchorElement>('.shell__nav-link')!;
     firstLink.focus();
@@ -126,8 +129,12 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
 
     tour.dismiss();
     fixture.detectChanges();
-    expect(nav.hasAttribute('inert')).toBeFalse();
+    expect(nav.hasAttribute('inert')).toBeTrue();
     expect(main.hasAttribute('inert')).toBeFalse();
+
+    host.querySelector<HTMLButtonElement>('.shell__menu-button')!.click();
+    fixture.detectChanges();
+    expect(nav.hasAttribute('inert')).toBeFalse();
   });
 
   it('هنگام قطع اتصال، راهنمای فارسی قابل دسترس نمایش می‌دهد', () => {
