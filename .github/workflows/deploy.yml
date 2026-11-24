@@ -61,22 +61,6 @@ jobs:
           echo "$?" > release-evidence/web-runtime.exit-code
           set -e
 
-      - name: Verify all unit tests
-        run: npm run test:ci -- --no-progress
-
-      - name: Generate web and Android brand assets
-        run: node scripts/generate-brand-assets.mjs
-
-      - name: Build production web output
-        run: npm run build -- --configuration=production --base-href=/molavi-poetry-app/
-
-      - name: Verify web release output
-        run: |
-          test -s dist/molavi-poetry-app/browser/index.html
-          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-192.png
-          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-512.png
-          grep -q 'بشنو بخوان' dist/molavi-poetry-app/browser/manifest.webmanifest
-
       - name: Commit generated lockfile to the release branch
         shell: bash
         env:
@@ -93,6 +77,22 @@ jobs:
             echo "package-lock.json is already synchronized."
           fi
 
+      - name: Verify all unit tests
+        run: npm run test:ci -- --no-progress
+
+      - name: Generate web and Android brand assets
+        run: node scripts/generate-brand-assets.mjs
+
+      - name: Build production web output
+        run: npm run build -- --configuration=production --base-href=/molavi-poetry-app/
+
+      - name: Verify web release output
+        run: |
+          test -s dist/molavi-poetry-app/browser/index.html
+          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-192.png
+          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-512.png
+          grep -q 'بشنو بخوان' dist/molavi-poetry-app/browser/manifest.webmanifest
+
       - name: Upload dependency and web build evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -100,6 +100,7 @@ jobs:
           name: Beshno-Bekhan-Release-Dependency-Evidence
           path: |
             release-evidence/
+            package-lock.json
             dist/molavi-poetry-app/browser/
           if-no-files-found: warn
           retention-days: 30
