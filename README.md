@@ -92,3 +92,15 @@ The first Android pilot uses pinned Capacitor 8.0.0 packages and bundles the Ang
 The Android build is separate from the GitHub Pages deployment. No production signing keys are present in the repository. The debug APK is **not** store-ready.
 
 See [the Persian APK download, installation and real-device test plan](docs/android-apk-pilot-fa.md).
+
+## First-use guide (web + Android)
+
+Molavi introduces the basic Persian interface through five short, dismissible steps:
+listen to a poem, find a remembered verse, read in large text, and keep favorites.
+The guide is shown only once per device installation/browser storage and does not
+require network access or an account. Users can reopen it any time from
+**کتابخانه من → راهنمای استفاده**.
+
+Automated tests cover first visit, dismissal persistence, replay, navigation,
+keyboard Escape/focus trapping, accessible RTL dialog, and large tap targets.
+Read [the Persian onboarding acceptance and accessibility plan](docs/first-run-tour-fa.md).

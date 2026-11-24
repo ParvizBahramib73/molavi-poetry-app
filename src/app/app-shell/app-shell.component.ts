@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { OnboardingTourService } from '../core/onboarding-tour.service';
+import { FirstRunTourComponent } from '../shared/first-run-tour/first-run-tour.component';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 /**
@@ -9,7 +11,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   selector: 'app-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FirstRunTourComponent],
   template: `
     <div class="shell" dir="rtl" lang="fa">
       <header class="shell__header">
@@ -65,6 +67,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
           اینترنت قطع است. کتابخانه ذخیره‌شده را می‌توانی ببینی.
         </div>
       }
+
+      <app-first-run-tour />
     </div>
   `,
   styles: [`
@@ -192,10 +196,17 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     }
   `],
 })
-export class AppShellComponent {
+export class AppShellComponent implements OnInit {
   isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  constructor(
+    private readonly cdr: ChangeDetectorRef,
+    private readonly tour: OnboardingTourService,
+  ) {}
+
+  ngOnInit(): void {
+    this.tour.startIfFirstVisit();
+  }
 
   @HostListener('window:online')
   onOnline(): void {
