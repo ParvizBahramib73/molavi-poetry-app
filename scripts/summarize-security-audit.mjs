@@ -16,11 +16,9 @@ function formatFix(value) {
   return String(value);
 }
 
-const sections = [
-  '# Dependency security audit report', '',
+const sections = ['# Dependency security audit report', '',
   'This report records advisories; counts do not establish exploitability.',
-  'No dependency was automatically changed or fixed by this workflow.', ''
-];
+  'No dependency was automatically changed or fixed by this workflow.', ''];
 
 for (const [label, path] of reports) {
   sections.push('## ' + label, '');
@@ -39,7 +37,7 @@ for (const [label, path] of reports) {
       return [entry.title, entry.url, entry.range].filter(Boolean).join(' — ') || JSON.stringify(entry);
     });
     const references = via.join('; ') || 'No advisory detail supplied';
-    const cves = [...new Set(references.match(/CVE-\\d{4}-\\d{4,}/g) ?? [])].join(', ') || 'not listed in npm audit output';
+    const cves = [...new Set(references.match(/CVE-\d{4}-\d{4,}/g) ?? [])].join(', ') || 'not listed in npm audit output';
     sections.push(
       '- **' + name + '** — ' + (item.severity ?? 'unknown') + '; ' + (item.isDirect ? 'direct' : 'transitive') + '; affected range: ' + (item.range ?? 'not listed'),
       '  - Installed paths: ' + ((item.nodes ?? []).join(', ') || 'not listed'),
@@ -51,7 +49,7 @@ for (const [label, path] of reports) {
   sections.push('');
 }
 
-const markdown = sections.join('\\n');
+const markdown = sections.join('\n');
 writeFileSync('security-audit/summary.md', markdown, 'utf8');
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, markdown);
 console.log(markdown);
