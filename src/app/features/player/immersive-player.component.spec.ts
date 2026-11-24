@@ -357,6 +357,42 @@ describe('ImmersivePlayerComponent', () => {
     expect(audio.currentTime).toBe(42);
   });
 
+  it('saves the outgoing poem and does not copy its audio time into the next poem', () => {
+    ganjoorSpy.getPoem.and.callFake((id: number) =>
+      of(makePoem({ id, title: `شعر ${id}` })),
+    );
+    component.id = '8';
+    fixture.detectChanges();
+
+    const audio = { ...fakeAudio(), currentTime: 37 } as HTMLAudioElement;
+    component.audioRef = new ElementRef(audio);
+    component.onTimeUpdate();
+
+    component.id = '9';
+    fixture.detectChanges();
+
+    const history = JSON.parse(localStorage.getItem('molavi:history:v1') ?? '[]') as Array<{
+      id: number;
+      positionSeconds: number;
+    }>;
+    expect(history.find((entry) => entry.id === 8)?.positionSeconds).toBe(37);
+    expect(history.find((entry) => entry.id === 9)?.positionSeconds).toBe(0);
+    expect(component.currentTime).toBe(0);
+  });
+
+  it('closes player overlays on Android Back before route navigation', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+    component.openPicker();
+
+    const detail = { handled: false };
+    window.dispatchEvent(new CustomEvent('beshno:back', { detail }));
+
+    expect(detail.handled).toBeTrue();
+    expect(component.pickerOpen).toBeFalse();
+  });
+
   it('asks what to do after a poem ends by default', () => {
     ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
     component.id = '8';
