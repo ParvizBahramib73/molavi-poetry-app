@@ -8,7 +8,7 @@ import { Routes } from '@angular/router';
  * - `poem/:id`         → نمای مطالعهٔ یک شعر (Reading_View) — روی دیسک نگه‌داشته
  *   می‌شود ولی در جریان اصلی UI سطح‌بالا نمایش داده نمی‌شود.
  * - `poem/:id/listen`  → پخش‌کنندهٔ غوطه‌ور برای شعری مشخص.
- * - `search`           → جست‌وجوی اشعار مولوی — برای سازگاری آزمون‌ها باقی است.
+ * - `search`           → جست‌وجوی بشنو بخوان | شعر مولوی — برای سازگاری آزمون‌ها باقی است.
  *
  * Requirements: 7.1, 7.2
  */
@@ -16,7 +16,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    title: 'اشعار مولوی — شنیدن',
+    title: 'اشعار بشنو بخوان | شعر مولوی — شنیدن',
     loadComponent: () =>
       import('./features/player/immersive-player.component').then(
         (m) => m.ImmersivePlayerComponent,
@@ -24,13 +24,13 @@ export const routes: Routes = [
   },
   {
     path: 'poem/:id',
-    title: 'اشعار مولوی — مطالعهٔ شعر',
+    title: 'اشعار بشنو بخوان | شعر مولوی — مطالعهٔ شعر',
     loadComponent: () =>
       import('./features/reading/reading-view.component').then((m) => m.ReadingViewComponent),
   },
   {
     path: 'poem/:id/listen',
-    title: 'اشعار مولوی — شنیدن شعر',
+    title: 'اشعار بشنو بخوان | شعر مولوی — شنیدن شعر',
     loadComponent: () =>
       import('./features/player/immersive-player.component').then(
         (m) => m.ImmersivePlayerComponent,
@@ -38,13 +38,13 @@ export const routes: Routes = [
   },
   {
     path: 'search',
-    title: 'اشعار مولوی — جست‌وجو',
+    title: 'اشعار بشنو بخوان | شعر مولوی — جست‌وجو',
     loadComponent: () =>
       import('./features/search/search.component').then((m) => m.SearchComponent),
   },
   {
     path: 'library',
-    title: 'کتابخانه من — اشعار مولوی',
+    title: 'کتابخانه من | بشنو بخوان',
     loadComponent: () =>
       import('./features/library/library.component').then((m) => m.LibraryComponent),
   },

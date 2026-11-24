@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { OnboardingTourService } from '../core/onboarding-tour.service';
+import { FirstRunTourComponent } from '../shared/first-run-tour/first-run-tour.component';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 /**
@@ -9,14 +11,19 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   selector: 'app-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FirstRunTourComponent],
   template: `
     <div class="shell" dir="rtl" lang="fa">
       <header class="shell__header">
-        <span class="shell__brand">مولوی؛ بخوان و بشنو</span>
+        <img class="shell__brand-icon" src="icons/beshno-bekhan.svg" alt="" width="36" height="36" />
+        <div class="shell__brand-text">
+          <strong class="shell__brand">بشنو بخوان</strong>
+          <span class="shell__brand-subtitle">شعر مولوی · بخوان، بشنو، لذت ببر</span>
+        </div>
       </header>
 
-      <nav class="shell__nav" aria-label="بخش‌های اصلی برنامه">
+      <nav class="shell__nav" aria-label="بخش‌های اصلی برنامه"
+        [attr.inert]="tour.isOpen() ? '' : null">
         <a
           routerLink="/"
           routerLinkActive="shell__nav-link--active"
@@ -56,7 +63,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         </a>
       </nav>
 
-      <main class="shell__main" id="main-content">
+      <main class="shell__main" id="main-content"
+        [attr.inert]="tour.isOpen() ? '' : null">
         <router-outlet />
       </main>
 
@@ -65,6 +73,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
           اینترنت قطع است. کتابخانه ذخیره‌شده را می‌توانی ببینی.
         </div>
       }
+
+      <app-first-run-tour />
     </div>
   `,
   styles: [`
@@ -107,17 +117,38 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
       }
     }
 
-    /* Heading exists for assistive technology without taking up player space. */
     .shell__header {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-      border: 0;
+      order: 0;
+      flex: 0 0 auto;
+      min-height: 59px;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.4rem 0.85rem;
+      background: #101b32;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+    }
+    .shell__brand-icon {
+      display: block;
+      flex: 0 0 36px;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+    }
+    .shell__brand-text {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      line-height: 1.35;
+    }
+    .shell__brand {
+      color: #ffebb0;
+      font-size: 1.02rem;
+      font-weight: 800;
+    }
+    .shell__brand-subtitle {
+      color: #d3d9e4;
+      font-size: 0.72rem;
     }
 
     .shell__main {
@@ -192,10 +223,17 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     }
   `],
 })
-export class AppShellComponent {
+export class AppShellComponent implements OnInit {
   isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  constructor(
+    private readonly cdr: ChangeDetectorRef,
+    readonly tour: OnboardingTourService,
+  ) {}
+
+  ngOnInit(): void {
+    this.tour.startIfFirstVisit();
+  }
 
   @HostListener('window:online')
   onOnline(): void {

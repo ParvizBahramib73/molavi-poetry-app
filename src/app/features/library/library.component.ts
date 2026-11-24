@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { PoetryLibraryService, ListeningHistoryEntry } from '../../core/poetry-library.service';
 import { PwaInstallService } from '../../core/pwa-install.service';
+import { OnboardingTourService } from '../../core/onboarding-tour.service';
 
 @Component({
   selector: 'app-library',
@@ -19,6 +20,9 @@ import { PwaInstallService } from '../../core/pwa-install.service';
           <p class="library__intro">علاقه‌مندی‌ها و آخرین شنیده‌های تو، فقط روی همین دستگاه</p>
         </div>
         <div class="library__header-actions">
+          <button type="button" class="library__help" (click)="showTour()">
+            ؟ راهنمای استفاده
+          </button>
           <a routerLink="/search" class="library__text-link">جست‌وجوی شعر</a>
           @if (pwaInstall.canInstall()) {
             <button type="button" class="library__install" (click)="installApp()">نصب برنامه</button>
@@ -164,6 +168,22 @@ import { PwaInstallService } from '../../core/pwa-install.service';
     .library__empty > span { color: #d4af37; font-size: 1.6rem; }
     .library__empty p { margin: 0; line-height: 1.8; }
     .library__empty--compact { padding: 1.1rem; }
+    .library__help {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 46px;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid rgba(228, 195, 102, .55);
+      border-radius: 12px;
+      background: #293b55;
+      color: #fff3c7;
+      font: inherit;
+      font-size: .86rem;
+      font-weight: 700;
+      line-height: 1.5;
+      cursor: pointer;
+    }
     .library__footer { max-width: 38rem; margin: 2rem auto 0; color: rgba(248,245,236,.8); font-size: .82rem; line-height: 1.8; text-align: center; }
 
     .library__confirm {
@@ -211,10 +231,15 @@ export class LibraryComponent {
   constructor(
     readonly library: PoetryLibraryService,
     readonly pwaInstall: PwaInstallService,
+    readonly tour: OnboardingTourService,
   ) {}
 
   installApp(): void {
     void this.pwaInstall.promptInstall();
+  }
+
+  showTour(): void {
+    this.tour.replay();
   }
 
   removeFavorite(poemId: number): void {

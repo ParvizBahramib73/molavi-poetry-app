@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "مولوی | بخوان و بشنو",
-  "short_name": "مولوی",
-  "description": "تجربه‌ای برای خواندن و شنیدن اشعار مولانا با نمایش هم‌زمان ابیات.",
+  "name": "بشنو بخوان | شعر مولوی",
+  "short_name": "بشنو بخوان",
+  "description": "بشنو بخوان؛ شعرهای مولانا را مثل موسیقی آسان پخش کن، بخوان و لذت ببر.",
   "lang": "fa",
   "dir": "rtl",
   "start_url": "./",
@@ -11,18 +11,28 @@
   "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "categories": ["books", "education", "music"],
+  "categories": [
+    "books",
+    "education",
+    "music"
+  ],
   "icons": [
     {
-      "src": "icons/molavi.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "icons/beshno-bekhan-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/beshno-bekhan-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "favicon.ico",
-      "sizes": "48x48 32x32 16x16",
-      "type": "image/x-icon",
+      "src": "icons/beshno-bekhan.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]

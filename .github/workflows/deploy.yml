@@ -53,8 +53,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install pinned icon renderer
+        run: npm install --no-save --no-package-lock sharp@0.34.3
+
+      - name: Generate branded web/PWA icons
+        run: node scripts/generate-brand-assets.mjs
+
       - name: Build for GitHub Pages
         run: npm run build -- --configuration=production --base-href=/molavi-poetry-app/
+
+      - name: Verify brand assets
+        run: |
+          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-192.png
+          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-512.png
+          grep -q 'بشنو بخوان' dist/molavi-poetry-app/browser/manifest.webmanifest
 
       - name: Add SPA fallback
         run: cp dist/molavi-poetry-app/browser/index.html dist/molavi-poetry-app/browser/404.html
