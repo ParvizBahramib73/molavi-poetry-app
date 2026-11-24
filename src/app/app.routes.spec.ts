@@ -110,16 +110,23 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     ]);
   });
 
-  it('ناوبری اصلی بعد از بستن تور با صفحه‌کلید قابل فوکوس است', () => {
+  it('ناوبری اصلی بعد از بستن تور با صفحه‌کلید قابل فوکوس است', async () => {
     TestBed.inject(OnboardingTourService).dismiss();
     fixture.detectChanges();
     const menuButton = host.querySelector<HTMLButtonElement>('.shell__menu-button')!;
     menuButton.click();
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const nav = host.querySelector<HTMLElement>('.shell__nav')!;
     const firstLink = host.querySelector<HTMLAnchorElement>('.shell__nav-link')!;
-    firstLink.focus();
-    expect(document.activeElement).toBe(firstLink);
+    expect(nav.classList.contains('shell__nav--open')).toBeTrue();
+    expect(nav.hasAttribute('inert')).toBeFalse();
     expect(firstLink.tabIndex).toBeGreaterThanOrEqual(0);
+
+    firstLink.focus({ preventScroll: true });
+    expect(document.activeElement).toBe(firstLink);
   });
 
   it('در زمان تور آموزشی، ناوبری زمینه غیرفعال است و بعد دوباره فعال می‌شود', () => {
