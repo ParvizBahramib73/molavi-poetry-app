@@ -83,6 +83,13 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     expect(shell!.getAttribute('dir')).toBe('rtl');
   });
 
+  it('نام برند و نشان برنامه را در سربرگ نمایش می‌دهد', () => {
+    const brand = host.querySelector<HTMLElement>('.shell__brand');
+    const icon = host.querySelector<HTMLImageElement>('.shell__brand-icon');
+    expect(brand?.textContent?.trim()).toBe('بشنو بخوان');
+    expect(icon?.getAttribute('src')).toBe('icons/beshno-bekhan.svg');
+  });
+
   it('سه مسیر اصلی را با برچسب‌های قابل فهم نشان می‌دهد', () => {
     const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.shell__nav-link'));
     expect(links.length).toBe(3);

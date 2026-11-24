@@ -15,7 +15,11 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   template: `
     <div class="shell" dir="rtl" lang="fa">
       <header class="shell__header">
-        <span class="shell__brand">بشنو بخوان — شعر مولوی</span>
+        <img class="shell__brand-icon" src="icons/beshno-bekhan.svg" alt="" width="36" height="36" />
+        <div class="shell__brand-text">
+          <strong class="shell__brand">بشنو بخوان</strong>
+          <span class="shell__brand-subtitle">شعر مولوی · بخوان، بشنو، لذت ببر</span>
+        </div>
       </header>
 
       <nav class="shell__nav" aria-label="بخش‌های اصلی برنامه"
@@ -113,17 +117,38 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
       }
     }
 
-    /* Heading exists for assistive technology without taking up player space. */
     .shell__header {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-      border: 0;
+      order: 0;
+      flex: 0 0 auto;
+      min-height: 59px;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.4rem 0.85rem;
+      background: #101b32;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+    }
+    .shell__brand-icon {
+      display: block;
+      flex: 0 0 36px;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+    }
+    .shell__brand-text {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      line-height: 1.35;
+    }
+    .shell__brand {
+      color: #ffebb0;
+      font-size: 1.02rem;
+      font-weight: 800;
+    }
+    .shell__brand-subtitle {
+      color: #d3d9e4;
+      font-size: 0.72rem;
     }
 
     .shell__main {
