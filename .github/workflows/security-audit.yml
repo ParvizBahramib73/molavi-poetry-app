@@ -1,0 +1,75 @@
+name: Dependency Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit web and Android build dependencies
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked web dependencies
+        run: npm ci
+
+      - name: Audit web dependency graph without changing dependencies
+        shell: bash
+        run: |
+          mkdir -p security-audit
+          set +e
+          npm audit --json > security-audit/web-all.json 2> security-audit/web-all.stderr
+          echo "$?" > security-audit/web-all.exit-code
+          npm audit --omit=dev --json > security-audit/web-runtime.json 2> security-audit/web-runtime.stderr
+          echo "$?" > security-audit/web-runtime.exit-code
+          set -e
+
+      - name: Audit the pinned Android build-tooling graph
+        shell: bash
+        run: |
+          mkdir -p /tmp/beshno-android-tooling security-audit
+          cd /tmp/beshno-android-tooling
+          npm init -y
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --save-exact \\
+            @capacitor/core@8.0.0 \\
+            @capacitor/android@8.0.0 \\
+            @capacitor/cli@8.0.0 \\
+            @capacitor/app@8.0.0 \\
+            @capacitor/assets@3.0.5 \\
+            sharp@0.34.3
+          set +e
+          npm audit --json > "$GITHUB_WORKSPACE/security-audit/android-tooling.json" 2> "$GITHUB_WORKSPACE/security-audit/android-tooling.stderr"
+          echo "$?" > "$GITHUB_WORKSPACE/security-audit/android-tooling.exit-code"
+          set -e
+
+      - name: Summarize audit evidence
+        if: always()
+        run: node scripts/summarize-security-audit.mjs
+
+      - name: Upload raw audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beshno-bekhan-dependency-security-audit
+          path: security-audit/
+          if-no-files-found: warn
+          retention-days: 30
