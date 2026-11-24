@@ -1,0 +1,67 @@
+name: Build Web Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [release/bazaar-hardening]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Build and package production web release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Verify unit tests
+        run: npm run test:ci -- --no-progress
+
+      - name: Generate brand assets
+        run: node scripts/generate-brand-assets.mjs
+
+      - name: Build GitHub Pages production site
+        run: npm run build -- --configuration=production --base-href=/molavi-poetry-app/
+
+      - name: Verify and package web output
+        run: |
+          test -s dist/molavi-poetry-app/browser/index.html
+          test -s dist/molavi-poetry-app/browser/manifest.webmanifest
+          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-192.png
+          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-512.png
+          grep -q 'بشنو بخوان' dist/molavi-poetry-app/browser/manifest.webmanifest
+          cp dist/molavi-poetry-app/browser/index.html dist/molavi-poetry-app/browser/404.html
+          touch dist/molavi-poetry-app/browser/.nojekyll
+          mkdir -p release-output
+          cd dist/molavi-poetry-app/browser
+          zip -qr "$GITHUB_WORKSPACE/release-output/Beshno-Bekhan-Web-1.0.0.zip" .
+          cd "$GITHUB_WORKSPACE/release-output"
+          sha256sum Beshno-Bekhan-Web-1.0.0.zip > SHA256SUMS.txt
+          ls -lh
+          cat SHA256SUMS.txt
+
+      - name: Upload production web release
+        uses: actions/upload-artifact@v4
+        with:
+          name: Beshno-Bekhan-Web-Release
+          path: |
+            release-output/
+            dist/molavi-poetry-app/browser/
+          if-no-files-found: error
+          retention-days: 30
