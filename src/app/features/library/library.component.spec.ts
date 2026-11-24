@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { PoetryLibraryService } from '../../core/poetry-library.service';
+import { OnboardingTourService } from '../../core/onboarding-tour.service';
 import { LibraryComponent } from './library.component';
 
 describe('LibraryComponent', () => {
@@ -21,6 +22,19 @@ describe('LibraryComponent', () => {
   });
 
   afterEach(() => localStorage.clear());
+
+  it('allows replaying the beginner guide from the personal library', () => {
+    const tour = TestBed.inject(OnboardingTourService);
+    const button = fixture.nativeElement.querySelector('.library__help') as HTMLButtonElement;
+    expect(button).not.toBeNull();
+    expect(button.textContent).toContain('راهنمای استفاده');
+
+    tour.dismiss();
+    button.click();
+
+    expect(tour.isOpen()).toBeTrue();
+    expect(tour.stepIndex()).toBe(0);
+  });
 
   it('shows helpful empty states when the personal library is empty', () => {
     expect(fixture.nativeElement.textContent).toContain('هنوز شعری نشنیده‌ای');

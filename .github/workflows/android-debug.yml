@@ -58,7 +58,12 @@ jobs:
           npm install --no-save --no-package-lock \
             @capacitor/core@8.0.0 \
             @capacitor/android@8.0.0 \
-            @capacitor/cli@8.0.0
+            @capacitor/cli@8.0.0 \
+            @capacitor/assets@3.0.5 \
+            sharp@0.34.3
+
+      - name: Generate branded icon and splash sources
+        run: node scripts/generate-brand-assets.mjs
 
       - name: Build web app for native localhost origin
         run: npm run build -- --configuration=production --base-href=/
@@ -67,6 +72,7 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+          npx capacitor-assets generate --android
 
       - name: Verify Android app configuration
         run: |
@@ -74,6 +80,9 @@ jobs:
           test -f android/gradlew
           grep -R -q 'com.parvizbahrami.molavi' android/app/build.gradle
           test -f android/app/src/main/assets/public/index.html
+          grep -R -q 'بشنو بخوان' android/app/src/main/res/values/strings.xml
+          test -s android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          test -s android/app/src/main/assets/public/icons/beshno-bekhan-512.png
           ! grep -q '<base href="/molavi-poetry-app/">' android/app/src/main/assets/public/index.html
 
       - name: Compile and debug-sign APK
@@ -86,16 +95,16 @@ jobs:
         run: |
           test -s android/app/build/outputs/apk/debug/app-debug.apk
           mkdir -p android-debug-output
-          cp android/app/build/outputs/apk/debug/app-debug.apk android-debug-output/Molavi-Debug.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk android-debug-output/Beshno-Bekhan-Debug.apk
           cd android-debug-output
-          sha256sum Molavi-Debug.apk > SHA256SUMS.txt
-          ls -lh Molavi-Debug.apk
+          sha256sum Beshno-Bekhan-Debug.apk > SHA256SUMS.txt
+          ls -lh Beshno-Bekhan-Debug.apk
           cat SHA256SUMS.txt
 
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: Molavi-Android-Debug-APK
+          name: Beshno-Bekhan-Android-Debug-APK
           path: android-debug-output/
           if-no-files-found: error
           retention-days: 14

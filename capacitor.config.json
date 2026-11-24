@@ -1,6 +1,6 @@
 {
   "appId": "com.parvizbahrami.molavi",
-  "appName": "مولوی؛ بخوان و بشنو",
+  "appName": "بشنو بخوان",
   "webDir": "dist/molavi-poetry-app/browser",
   "server": {
     "androidScheme": "https"
