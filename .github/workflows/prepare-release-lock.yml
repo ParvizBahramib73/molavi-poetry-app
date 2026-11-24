@@ -35,7 +35,7 @@ jobs:
           cache: npm
 
       - name: Resolve exact direct dependency pins into the lockfile
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --no-progress
 
       - name: Apply non-breaking transitive advisory fixes
         shell: bash
