@@ -37,6 +37,7 @@
 - Angular framework (`common`، `compiler`، `core`، `forms`، `platform-browser`، `router` و `compiler-cli`): `20.3.35`؛ ابزارهای `@angular/build` و `@angular/cli`: `20.3.43`.
 - Capacitor: `core`، `android` و `cli` روی `8.6.2` و افزونهٔ `app` روی نسخهٔ منتشرشدهٔ `8.1.2` پین شده‌اند.
 - ابزارهای asset: `@capacitor/assets@4.0.0` و `sharp@0.35.5` پین شده‌اند.
+- نسخهٔ اولیهٔ Android روی `versionName=1.0.0` و `versionCode=1` تنظیم شده است؛ برای هر انتشار بعدی `versionCode` باید افزایش یابد.
 - lockfile باید فقط با `npm install --package-lock-only` و `npm audit fix --package-lock-only` بدون `--force` بازتولید و سپس با `npm ci` اعتبارسنجی شود.
 
 ## امضای امن Android Release
