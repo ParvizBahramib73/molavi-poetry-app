@@ -74,7 +74,12 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
 
     fixture = TestBed.createComponent(AppShellComponent);
     host = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(host);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    host.remove();
   });
 
   it('جهت سراسری راست‌به‌چپ (`dir="rtl"`) را روی ریشهٔ پوسته اعمال می‌کند', () => {
