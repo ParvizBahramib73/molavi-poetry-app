@@ -1,9 +1,9 @@
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 const reports = [
-  ['Web dependencies (all)', 'security-audit/web-all.json'],
-  ['Web runtime dependencies', 'security-audit/web-runtime.json'],
-  ['Android build tooling', 'security-audit/android-tooling.json'],
+  ['Web dependencies (all)', 'security-audit/web-all.json', 'package-lock.json'],
+  ['Web runtime dependencies', 'security-audit/web-runtime.json', 'package-lock.json'],
+  ['Android build tooling', 'security-audit/android-tooling.json', 'security-audit/android-tooling-package-lock.json'],
 ];
 
 function formatFix(value) {
@@ -20,12 +20,14 @@ const sections = ['# Dependency security audit report', '',
   'This report records advisories; counts do not establish exploitability.',
   'No dependency was automatically changed or fixed by this workflow.', ''];
 
-for (const [label, path] of reports) {
+for (const [label, path, lockPath] of reports) {
   sections.push('## ' + label, '');
   if (!existsSync(path)) { sections.push('**NOT RUN** — report file was not created.', ''); continue; }
   let report;
   try { report = JSON.parse(readFileSync(path, 'utf8')); }
   catch { sections.push('**NOT RUN / INVALID REPORT** — npm did not produce parseable JSON. Check the matching stderr file.', ''); continue; }
+  let lock = {};
+  try { lock = JSON.parse(readFileSync(lockPath, 'utf8')); } catch { /* lockfile version details unavailable */ }
   const totals = report.metadata && report.metadata.vulnerabilities;
   if (!totals) { sections.push('**NOT RUN / INCOMPLETE** — JSON has no vulnerability metadata.', ''); continue; }
   sections.push('Totals: ' + (totals.total ?? 0) + ' (critical ' + (totals.critical ?? 0) + ', high ' + (totals.high ?? 0) + ', moderate ' + (totals.moderate ?? 0) + ', low ' + (totals.low ?? 0) + ', info ' + (totals.info ?? 0) + ')', '');
@@ -39,7 +41,7 @@ for (const [label, path] of reports) {
     const references = via.join('; ') || 'No advisory detail supplied';
     const cves = [...new Set(references.match(/CVE-\d{4}-\d{4,}/g) ?? [])].join(', ') || 'not listed in npm audit output';
     const installed = (item.nodes ?? []).map((node) => {
-      const version = report.packages && report.packages[node] && report.packages[node].version;
+      const version = lock.packages && lock.packages[node] && lock.packages[node].version;
       return version ? node + '@' + version : node;
     });
     sections.push(
