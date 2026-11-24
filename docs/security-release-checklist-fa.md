@@ -35,3 +35,37 @@
 - [ ] بررسی نهایی CSP و هدرهای امنیتی روی میزبان واقعی
 
 هیچ تغییر فرانت‌اندی نمی‌تواند جلوی تمام مهندسی معکوس یا کپی محتوای عمومی را بگیرد؛ امضای release، کنترل وابستگی‌ها، حداقل‌سازی مجوزها و عدم قراردادن اسرار در برنامه ضروری‌اند.
+
+## وضعیت نسخهٔ انتشار و وابستگی‌های اصلاح‌شده
+
+- Angular: همهٔ پکیج‌های اصلی و ابزارهای build روی `20.3.43` پین شده‌اند.
+- Capacitor: `core`، `app`، `android` و `cli` روی `8.6.2` پین شده‌اند.
+- ابزارهای asset: `@capacitor/assets@4.0.0` و `sharp@0.35.5` پین شده‌اند.
+- lockfile باید فقط با `npm install --package-lock-only` و `npm audit fix --package-lock-only` بدون `--force` بازتولید و سپس با `npm ci` اعتبارسنجی شود.
+
+## امضای امن Android Release
+
+برای تولید APK/AAB امضاشده، keystore باید توسط مالک برنامه ساخته و در GitHub Repository Settings → Secrets and variables → Actions ثبت شود. هرگز فایل keystore یا رمزهای آن را در مخزن، Issue، Pull Request یا چت قرار ندهید.
+
+چهار secret لازم:
+
+- `ANDROID_KEYSTORE_BASE64`: محتوای Base64 فایل keystore
+- `ANDROID_KEYSTORE_PASSWORD`: رمز keystore
+- `ANDROID_KEY_ALIAS`: alias کلید
+- `ANDROID_KEY_PASSWORD`: رمز کلید
+
+نمونهٔ ساخت keystore روی سیستم امن خود:
+
+```bash
+keytool -genkeypair -v -keystore beshno-bekhan-upload.jks -alias beshno-bekhan -keyalg RSA -keysize 4096 -validity 10000
+```
+
+در PowerShell برای تولید مقدار Base64:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes('beshno-bekhan-upload.jks'))
+```
+
+پس از ثبت چهار secret، گردش‌کار `Build Signed Android Release` را از Actions به‌صورت دستی اجرا کنید. خروجی باید شامل APK و AAB امضاشده و SHA-256 هر دو باشد. نسخهٔ Debug برای انتشار در بازار قابل استفاده نیست.
+
+**مهم:** keystore را چند نسخهٔ پشتیبان آفلاین و رمزگذاری‌شده نگه دارید. از دست‌دادن کلید امضای اولیه می‌تواند انتشار به‌روزرسانی‌های بعدی را مختل کند.
