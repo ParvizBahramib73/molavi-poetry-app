@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { OnboardingTourService } from '../core/onboarding-tour.service';
 import { FirstRunTourComponent } from '../shared/first-run-tour/first-run-tour.component';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
 
 /**
  * Simple, persistent navigation for first-time and experienced readers alike.
@@ -15,11 +16,29 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   template: `
     <div class="shell" dir="rtl" lang="fa">
       <header class="shell__header">
-        <span class="shell__brand">بشنو بخوان — شعر مولوی</span>
+        <a class="shell__brand" routerLink="/" aria-label="بشنو بخوان؛ رفتن به پخش‌کننده">
+          <img src="icons/beshno-bekhan.svg" alt="" width="38" height="38">
+          <span><strong>بشنو بخوان</strong><small>شعر را بخوان، مثل موسیقی بشنو</small></span>
+        </a>
+        <button type="button" class="shell__menu-button" [attr.aria-expanded]="menuOpen"
+          aria-controls="main-menu" aria-label="باز کردن منوی اصلی" (click)="toggleMenu()">
+          @if (menuOpen) {
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          } @else {
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          }
+        </button>
       </header>
+      <button type="button" class="shell__menu-backdrop"
+        [class.shell__menu-backdrop--visible]="menuOpen" [attr.aria-hidden]="!menuOpen"
+        [attr.tabindex]="menuOpen ? 0 : -1" aria-label="بستن منو" (click)="closeMenu()"></button>
 
-      <nav class="shell__nav" aria-label="بخش‌های اصلی برنامه"
-        [attr.inert]="tour.isOpen() ? '' : null">
+      <nav id="main-menu" class="shell__nav" [class.shell__nav--open]="menuOpen"
+        [attr.inert]="(!menuOpen || tour.isOpen()) ? '' : null"
+        [attr.aria-hidden]="!menuOpen" aria-label="منوی اصلی">
+        <div class="shell__nav-heading"><span>منوی برنامه</span>
+          <button type="button" (click)="closeMenu()" aria-label="بستن منو">×</button>
+        </div>
         <a
           routerLink="/"
           routerLinkActive="shell__nav-link--active"
@@ -31,7 +50,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
             <path d="M8 5.5 19 12 8 18.5V5.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
             <path d="M4 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span>شنیدن</span>
+          <span>شنیدن و پخش شعر</span>
         </a>
         <a
           routerLink="/search"
@@ -43,7 +62,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
             <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/>
             <path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span>جست‌وجو</span>
+          <span>جست‌وجوی شعر</span>
         </a>
         <a
           routerLink="/library"
@@ -57,6 +76,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
           </svg>
           <span>کتابخانه من</span>
         </a>
+        <p class="shell__nav-hint">همه‌چیز برای ادامه شنیدن، همین‌جاست.</p>
       </nav>
 
       <main class="shell__main" id="main-content"
@@ -113,18 +133,16 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
       }
     }
 
-    /* Heading exists for assistive technology without taking up player space. */
-    .shell__header {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-      border: 0;
-    }
+    .shell__header { z-index: 45; flex: 0 0 54px; display: flex; align-items: center; justify-content: space-between; padding: .3rem .8rem; background: #101b32; border-bottom: 1px solid rgba(212,175,55,.2); }
+    .shell__brand { display: inline-flex; align-items: center; gap: .55rem; color: inherit; text-decoration: none; min-width: 0; }
+    .shell__brand img { width: 38px; height: 38px; border-radius: 11px; flex: 0 0 auto; }
+    .shell__brand span { display: flex; flex-direction: column; min-width: 0; gap: .05rem; }
+    .shell__brand strong { color: #f4d77f; font-size: .98rem; line-height: 1.35; }
+    .shell__brand small { color: #c8cbd4; font-size: .62rem; line-height: 1.3; }
+    .shell__menu-button { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: #f7e4a1; background: rgba(212,175,55,.1); border: 1px solid rgba(212,175,55,.3); border-radius: 13px; cursor: pointer; }
+    .shell__menu-button svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+    .shell__menu-backdrop { position: absolute; inset: 0; z-index: 49; border: 0; background: rgba(2,6,18,.62); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+    .shell__menu-backdrop--visible { opacity: 1; pointer-events: auto; }
 
     .shell__main {
       order: 1;
@@ -139,17 +157,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
       -webkit-overflow-scrolling: touch;
     }
 
-    .shell__nav {
-      order: 3;
-      z-index: 40;
-      flex: 0 0 auto;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.3rem;
-      padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom));
-      background: #101b32;
-      border-top: 1px solid rgba(212, 175, 55, 0.3);
-    }
+    .shell__nav { position: absolute; z-index: 50; top: 0; bottom: 0; right: 0; width: min(82%, 320px); display: flex; flex-direction: column; gap: .55rem; padding: 1rem .85rem; background: linear-gradient(160deg,#17243e,#0d1629); border-left: 1px solid rgba(212,175,55,.3); box-shadow: -18px 0 48px rgba(0,0,0,.35); transform: translateX(110%); visibility: hidden; transition: transform 200ms ease, visibility 200ms ease; }
+    .shell__nav--open { transform: translateX(0); visibility: visible; }
+    .shell__nav-heading { display: flex; align-items: center; justify-content: space-between; padding: .25rem .35rem .9rem; color: #f4d77f; font-weight: 800; border-bottom: 1px solid rgba(212,175,55,.18); }
+    .shell__nav-heading button { width: 36px; height: 36px; border: 0; border-radius: 10px; background: rgba(255,255,255,.07); color: #fff; font-size: 1.5rem; }
+    .shell__nav-hint { margin: auto .4rem .5rem; color: #aab2c4; font-size: .78rem; line-height: 1.8; }
+    .shell__menu-button:focus-visible,.shell__nav-link:focus-visible { outline: 2px solid #f4d77f; outline-offset: 3px; }
+    @media (prefers-reduced-motion: reduce) { .shell__nav,.shell__menu-backdrop { transition: none; } }
 
     .shell__nav-link {
       display: flex;
@@ -198,17 +212,34 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     }
   `],
 })
-export class AppShellComponent implements OnInit {
+export class AppShellComponent implements OnInit, OnDestroy {
   isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
+  menuOpen = false;
+  private nativeBackHandle?: { remove(): Promise<void> };
+  private routeSubscription?: { unsubscribe(): void };
 
   constructor(
     private readonly cdr: ChangeDetectorRef,
     readonly tour: OnboardingTourService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
     this.tour.startIfFirstVisit();
+    void this.registerNativeBackButton();
+    this.routeSubscription = this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => this.closeMenu());
   }
+
+  ngOnDestroy(): void {
+    void this.nativeBackHandle?.remove();
+    this.routeSubscription?.unsubscribe();
+  }
+
+  toggleMenu(): void { this.menuOpen = !this.menuOpen; this.cdr.markForCheck(); }
+  closeMenu(): void { if (!this.menuOpen) return; this.menuOpen = false; this.cdr.markForCheck(); }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void { this.closeMenu(); }
 
   @HostListener('window:online')
   onOnline(): void {
@@ -217,6 +248,26 @@ export class AppShellComponent implements OnInit {
   }
 
   @HostListener('window:offline')
+  private async registerNativeBackButton(): Promise<void> {
+    const bridge = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    if (!bridge?.isNativePlatform?.()) return;
+    try {
+      const { App } = await import('@capacitor/app');
+      this.nativeBackHandle = await App.addListener('backButton', () => this.handleBack());
+    } catch {
+      // Web builds and older APKs without the App plugin retain browser navigation.
+    }
+  }
+
+  private handleBack(): void {
+    if (this.menuOpen) { this.closeMenu(); return; }
+    const detail = { handled: false };
+    window.dispatchEvent(new CustomEvent('beshno:back', { detail }));
+    if (detail.handled) { this.cdr.markForCheck(); return; }
+    if (this.router.url !== '/') void this.router.navigateByUrl('/');
+    // At the player home, stay in the app instead of exiting.
+  }
+
   onOffline(): void {
     this.isOnline = false;
     this.cdr.markForCheck();

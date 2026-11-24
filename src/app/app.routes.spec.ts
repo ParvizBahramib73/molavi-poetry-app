@@ -83,12 +83,12 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     expect(shell!.getAttribute('dir')).toBe('rtl');
   });
 
-  it('سه مسیر اصلی را با برچسب‌های قابل فهم نشان می‌دهد', () => {
+  it('سه مقصد اصلی را داخل منوی همبرگری با برچسب‌های قابل فهم نشان می‌دهد', () => {
     const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.shell__nav-link'));
     expect(links.length).toBe(3);
     expect(links.map((link) => link.textContent?.trim())).toEqual([
-      'شنیدن',
-      'جست‌وجو',
+      'شنیدن و پخش شعر',
+      'جست‌وجوی شعر',
       'کتابخانه من',
     ]);
     expect(links.map((link) => link.getAttribute('href'))).toEqual([

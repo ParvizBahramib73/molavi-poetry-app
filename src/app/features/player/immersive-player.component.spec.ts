@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { GanjoorService } from '../../core/ganjoor.service';
+import { PoetryLibraryService } from '../../core/poetry-library.service';
 import { GanjoorApiError, Poem, Recitation } from '../../models';
 import { ImmersivePlayerComponent } from './immersive-player.component';
 
@@ -334,6 +335,50 @@ describe('ImmersivePlayerComponent', () => {
     expect(component.currentTime).toBe(35);
     expect((audio as { currentTime: number }).currentTime).toBe(35);
     expect(JSON.parse(localStorage.getItem('molavi:history:v1') ?? '[]')[0].positionSeconds).toBe(35);
+  });
+
+  it('restores the last poem, selected recitation and verse position on the player home', () => {
+    const secondRecitation: Recitation = {
+      id: 2, audioTitle: 'خوانش دوم', audioArtist: 'استاد دوم',
+      mp3Url: 'https://example.com/2.mp3',
+    };
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem({ recitations: [recitation, secondRecitation] })));
+    TestBed.inject(PoetryLibraryService).recordListening({
+      id: 8, title: 'بشنو این نی', fullUrl: '/moulavi/masnavi/daftar1/sh1',
+      recitationIndex: 1, positionSeconds: 42, durationSeconds: 120,
+    });
+    fixture.detectChanges();
+    expect(ganjoorSpy.getPoem).toHaveBeenCalledOnceWith(8);
+    expect(component.recitation?.id).toBe(2);
+    const audio = fakeAudio();
+    component.audioRef = new ElementRef(audio as HTMLAudioElement);
+    component.onLoadedMetadata();
+    expect(component.currentTime).toBe(42);
+    expect(audio.currentTime).toBe(42);
+  });
+
+  it('asks what to do after a poem ends by default', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+    component.onEnded();
+    fixture.detectChanges();
+    expect(component.completionPromptOpen).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.player__completion-overlay')).not.toBeNull();
+  });
+
+  it('persists the selected completion behavior and repeats when requested', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+    const play = jasmine.createSpy('play').and.returnValue(Promise.resolve());
+    const audio = { ...fakeAudio(), play };
+    component.audioRef = new ElementRef(audio as HTMLAudioElement);
+    component.onCompletionBehaviorChange({ target: { value: 'repeat' } } as unknown as Event);
+    component.onEnded();
+    expect(localStorage.getItem('beshno:completion-behavior:v1')).toBe('repeat');
+    expect(play).toHaveBeenCalled();
+    expect(component.completionPromptOpen).toBeFalse();
   });
 
   it('should re-invoke getPoem on retry', () => {
