@@ -1,0 +1,93 @@
+name: Android Debug APK
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-debug-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug-apk:
+    name: Build installable Android test APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Java for Capacitor Android
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install existing Angular dependencies
+        run: npm ci
+
+      # The first APK pilot is isolated from the web project's lockfile.
+      # These three native packages are pinned to the SAME Capacitor release.
+      # A native platform lockfile will be committed before store release.
+      - name: Install pinned Capacitor Android tooling
+        run: |
+          npm install --no-save --no-package-lock \
+            @capacitor/core@8.0.0 \
+            @capacitor/android@8.0.0 \
+            @capacitor/cli@8.0.0
+
+      - name: Build web app for native localhost origin
+        run: npm run build -- --configuration=production --base-href=/
+
+      - name: Generate Android project and sync web assets
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Verify Android app configuration
+        run: |
+          test -f android/app/src/main/AndroidManifest.xml
+          test -f android/gradlew
+          grep -R -q 'com.parvizbahrami.molavi' android/app/build.gradle
+          test -f android/app/src/main/assets/public/index.html
+          ! grep -q '<base href="/molavi-poetry-app/">' android/app/src/main/assets/public/index.html
+
+      - name: Compile and debug-sign APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK and checksum
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          mkdir -p android-debug-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk android-debug-output/Molavi-Debug.apk
+          cd android-debug-output
+          sha256sum Molavi-Debug.apk > SHA256SUMS.txt
+          ls -lh Molavi-Debug.apk
+          cat SHA256SUMS.txt
+
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Molavi-Android-Debug-APK
+          path: android-debug-output/
+          if-no-files-found: error
+          retention-days: 14

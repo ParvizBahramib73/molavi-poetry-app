@@ -3,6 +3,16 @@ import { appConfig } from './app/app.config';
 import { App } from './app/app';
 
 function registerServiceWorker(): void {
+  // The Capacitor Android shell bundles the Angular files with the APK.
+  // Registering the web PWA service worker on its local origin could leave
+  // stale pages after an APK update, so only register it in the browser.
+  const nativeBridge = (window as Window & {
+    Capacitor?: { isNativePlatform?: () => boolean };
+  }).Capacitor;
+  if (nativeBridge?.isNativePlatform?.()) {
+    return;
+  }
+
   if (!('serviceWorker' in navigator)) {
     return;
   }
