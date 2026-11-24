@@ -84,3 +84,11 @@ The Persian search page is designed for remembering only a few words rather than
 - Unit tests cover search behaviour, Persian normalization, stale-request cancellation, excerpt selection, pagination, and linked verse highlighting.
 
 API behaviour is verified in network-mocked tests; reliability and latency against Ganjoor's live servers still require field validation.
+
+## Android test APK (Capacitor)
+
+The first Android pilot uses pinned Capacitor 8.0.0 packages and bundles the Angular app into an installable debug APK. CI checks out the project, builds the web bundle with a root base href, generates the Android project and uploads an artifact named `Molavi-Android-Debug-APK`.
+
+The Android build is separate from the GitHub Pages deployment. No production signing keys are present in the repository. The debug APK is **not** store-ready.
+
+See [the Persian APK download, installation and real-device test plan](docs/android-apk-pilot-fa.md).
