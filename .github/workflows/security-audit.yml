@@ -49,12 +49,12 @@ jobs:
           mkdir -p /tmp/beshno-android-tooling security-audit
           cd /tmp/beshno-android-tooling
           npm init -y
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --save-exact \\
-            @capacitor/core@8.0.0 \\
-            @capacitor/android@8.0.0 \\
-            @capacitor/cli@8.0.0 \\
-            @capacitor/app@8.0.0 \\
-            @capacitor/assets@3.0.5 \\
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --save-exact \
+            @capacitor/core@8.0.0 \
+            @capacitor/android@8.0.0 \
+            @capacitor/cli@8.0.0 \
+            @capacitor/app@8.0.0 \
+            @capacitor/assets@3.0.5 \
             sharp@0.34.3
           set +e
           npm audit --json > "$GITHUB_WORKSPACE/security-audit/android-tooling.json" 2> "$GITHUB_WORKSPACE/security-audit/android-tooling.stderr"
