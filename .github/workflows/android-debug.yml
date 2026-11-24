@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -49,6 +51,9 @@ jobs:
 
       - name: Install existing Angular dependencies
         run: npm ci
+
+      - name: Apply patched runtime dependency versions
+        run: npm audit fix --omit=dev --no-fund
 
       # The first APK pilot is isolated from the web project's lockfile.
       # These three native packages are pinned to the SAME Capacitor release.

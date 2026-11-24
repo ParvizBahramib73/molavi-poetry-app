@@ -2155,7 +2155,7 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
       return;
     }
     const second = Math.floor(this.currentTime);
-    if (!force && this.lastProgressSavedAt >= 0 && second - this.lastProgressSavedAt < 10) {
+    if (!force && this.lastProgressSavedAt >= 0 && second - this.lastProgressSavedAt < 3) {
       return;
     }
     this.lastProgressSavedAt = second;
