@@ -14,7 +14,7 @@
  */
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Route, provideRouter } from '@angular/router';
+import { Route, Router, provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { AppShellComponent } from './app-shell/app-shell.component';
@@ -74,7 +74,12 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
 
     fixture = TestBed.createComponent(AppShellComponent);
     host = fixture.nativeElement as HTMLElement;
+    document.body.appendChild(host);
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    host.remove();
   });
 
   it('جهت سراسری راست‌به‌چپ (`dir="rtl"`) را روی ریشهٔ پوسته اعمال می‌کند', () => {
@@ -105,16 +110,23 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     ]);
   });
 
-  it('ناوبری اصلی بعد از بستن تور با صفحه‌کلید قابل فوکوس است', () => {
+  it('ناوبری اصلی بعد از بستن تور در ترتیب پیمایش صفحه‌کلید باقی می‌ماند', async () => {
     TestBed.inject(OnboardingTourService).dismiss();
     fixture.detectChanges();
     const menuButton = host.querySelector<HTMLButtonElement>('.shell__menu-button')!;
     menuButton.click();
     fixture.detectChanges();
-    const firstLink = host.querySelector<HTMLAnchorElement>('.shell__nav-link')!;
-    firstLink.focus();
-    expect(document.activeElement).toBe(firstLink);
-    expect(firstLink.tabIndex).toBeGreaterThanOrEqual(0);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const nav = host.querySelector<HTMLElement>('.shell__nav')!;
+    const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.shell__nav-link'));
+    expect(nav.classList.contains('shell__nav--open')).toBeTrue();
+    expect(nav.hasAttribute('inert')).toBeFalse();
+    expect(links.length).toBe(3);
+    for (const link of links) {
+      expect(link.tabIndex).toBeGreaterThanOrEqual(0);
+    }
   });
 
   it('در زمان تور آموزشی، ناوبری زمینه غیرفعال است و بعد دوباره فعال می‌شود', () => {
@@ -147,5 +159,25 @@ describe('AppShellComponent (پوسته و ناوبری مسیرها)', () => {
     component.onOnline();
     fixture.detectChanges();
     expect(host.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it('Android Back closes the hamburger menu without navigating away', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = spyOn(router, 'navigateByUrl').and.resolveTo(true);
+    fixture.componentInstance.menuOpen = true;
+
+    (fixture.componentInstance as unknown as { handleBack(): void }).handleBack();
+
+    expect(fixture.componentInstance.menuOpen).toBeFalse();
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it('Android Back does not exit from the player home', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = spyOn(router, 'navigateByUrl').and.resolveTo(true);
+
+    (fixture.componentInstance as unknown as { handleBack(): void }).handleBack();
+
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 });

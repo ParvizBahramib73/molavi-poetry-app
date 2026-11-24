@@ -1,0 +1,149 @@
+name: Build Signed Android Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build signed APK and AAB for Bazaar
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Validate release signing secrets
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "Missing GitHub Actions secret: $name"
+              exit 1
+            fi
+          done
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Verify unit tests
+        run: npm run test:ci -- --no-progress
+
+      - name: Generate brand assets
+        run: node scripts/generate-brand-assets.mjs
+
+      - name: Build web assets for Android
+        run: npm run build -- --configuration=production --base-href=/
+
+      - name: Generate Android project
+        run: |
+          npx cap add android
+          npx cap sync android
+          ANDROID_VERSION_CODE=1 ANDROID_VERSION_NAME=1.0.0 node scripts/set-android-version.mjs
+          node scripts/harden-android-project.mjs
+          npx capacitor-assets generate --android
+          grep -q 'android:usesCleartextTraffic="false"' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:networkSecurityConfig="@xml/network_security_config"' android/app/src/main/AndroidManifest.xml
+          grep -q 'cleartextTrafficPermitted="false"' android/app/src/main/res/xml/network_security_config.xml
+
+      - name: Prepare release keystore
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/android/app/release-key.jks"
+          test -s "$GITHUB_WORKSPACE/android/app/release-key.jks"
+
+      - name: Configure Gradle release signing
+        shell: bash
+        run: |
+          cat > android/app/release-signing.gradle <<'GRADLE'
+          def keystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
+          def storePasswordValue = System.getenv('ANDROID_KEYSTORE_PASSWORD')
+          def keyAliasValue = System.getenv('ANDROID_KEY_ALIAS')
+          def keyPasswordValue = System.getenv('ANDROID_KEY_PASSWORD')
+          if (!keystorePath || !storePasswordValue || !keyAliasValue || !keyPasswordValue) {
+              throw new GradleException('Android release signing environment is incomplete.')
+          }
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file(keystorePath)
+                      storePassword storePasswordValue
+                      keyAlias keyAliasValue
+                      keyPassword keyPasswordValue
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          GRADLE
+          printf "\napply from: 'release-signing.gradle'\n" >> android/app/build.gradle
+
+      - name: Build signed release APK and App Bundle
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/release-key.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease bundleRelease
+
+      - name: Verify signatures and package release outputs
+        shell: bash
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          test -s "$APK"
+          test -s "$AAB"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          jarsigner -verify -verbose -certs "$AAB"
+          mkdir -p release-output
+          cp "$APK" release-output/Beshno-Bekhan-Release.apk
+          cp "$AAB" release-output/Beshno-Bekhan-Release.aab
+          cd release-output
+          sha256sum Beshno-Bekhan-Release.apk Beshno-Bekhan-Release.aab > SHA256SUMS.txt
+          ls -lh
+          cat SHA256SUMS.txt
+
+      - name: Remove temporary keystore
+        if: always()
+        run: rm -f android/app/release-key.jks android/app/release-signing.gradle
+
+      - name: Upload signed Android release
+        uses: actions/upload-artifact@v4
+        with:
+          name: Beshno-Bekhan-Signed-Android-Release
+          path: release-output/
+          if-no-files-found: error
+          retention-days: 30

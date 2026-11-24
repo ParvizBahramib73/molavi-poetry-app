@@ -52,25 +52,9 @@ jobs:
       - name: Install existing Angular dependencies
         run: npm ci
 
-      - name: Install patched Angular and Capacitor dependencies
-        run: |
-          npm install --package-lock-only --force --save-exact --no-audit --no-fund @angular/common@20.3.35 @angular/compiler@20.3.35 @angular/core@20.3.35 @angular/forms@20.3.35 @angular/platform-browser@20.3.35 @angular/router@20.3.35 @capacitor/core@8.0.0 @capacitor/app@8.0.0
-          npm install --package-lock-only --force --save-dev --save-exact --no-audit --no-fund @angular/build@20.3.35 @angular/cli@20.3.35 @angular/compiler-cli@20.3.35
-          npm ci
-
       # The first APK pilot is isolated from the web project's lockfile.
       # These three native packages are pinned to the SAME Capacitor release.
       # A native platform lockfile will be committed before store release.
-      - name: Install pinned Capacitor Android tooling
-        run: |
-          npm install --no-save --no-package-lock \
-            @capacitor/core@8.0.0 \
-            @capacitor/android@8.0.0 \
-            @capacitor/cli@8.0.0 \
-            @capacitor/assets@3.0.5 \
-            @capacitor/app@8.0.0 \
-            sharp@0.34.3
-
       - name: Generate branded icon and splash sources
         run: node scripts/generate-brand-assets.mjs
 
@@ -81,6 +65,11 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+          ANDROID_VERSION_CODE=1 ANDROID_VERSION_NAME=1.0.0 node scripts/set-android-version.mjs
+          node scripts/harden-android-project.mjs
+          grep -q 'android:usesCleartextTraffic="false"' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:networkSecurityConfig="@xml/network_security_config"' android/app/src/main/AndroidManifest.xml
+          grep -q 'cleartextTrafficPermitted="false"' android/app/src/main/res/xml/network_security_config.xml
           npx capacitor-assets generate --android
 
       - name: Verify Android app configuration

@@ -29,15 +29,15 @@
     "@angular/forms": "20.3.35",
     "@angular/platform-browser": "20.3.35",
     "@angular/router": "20.3.35",
-    "@capacitor/app": "8.0.0",
-    "@capacitor/core": "8.0.0",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular/build": "20.3.35",
-    "@angular/cli": "20.3.35",
+    "@angular/build": "20.3.43",
+    "@angular/cli": "20.3.43",
     "@angular/compiler-cli": "20.3.35",
     "@types/jasmine": "~5.1.0",
     "fast-check": "^4.8.0",
@@ -47,6 +47,26 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/assets": "4.0.0",
+    "sharp": "0.35.5"
+  },
+  "overrides": {
+    "@npmcli/package-json": {
+      "glob": "14.0.6",
+      "minimatch": "11.0.8"
+    },
+    "cacache": {
+      "glob": "14.0.6",
+      "minimatch": "11.0.8"
+    },
+    "@tufjs/models": {
+      "minimatch": "11.0.8"
+    },
+    "ignore-walk": {
+      "minimatch": "11.0.8"
+    }
   }
 }
