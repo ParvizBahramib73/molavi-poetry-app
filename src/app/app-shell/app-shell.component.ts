@@ -18,7 +18,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         <span class="shell__brand">مولوی؛ بخوان و بشنو</span>
       </header>
 
-      <nav class="shell__nav" aria-label="بخش‌های اصلی برنامه">
+      <nav class="shell__nav" aria-label="بخش‌های اصلی برنامه"
+        [attr.inert]="tour.isOpen() ? '' : null">
         <a
           routerLink="/"
           routerLinkActive="shell__nav-link--active"
@@ -58,7 +59,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         </a>
       </nav>
 
-      <main class="shell__main" id="main-content">
+      <main class="shell__main" id="main-content"
+        [attr.inert]="tour.isOpen() ? '' : null">
         <router-outlet />
       </main>
 
@@ -201,7 +203,7 @@ export class AppShellComponent implements OnInit {
 
   constructor(
     private readonly cdr: ChangeDetectorRef,
-    private readonly tour: OnboardingTourService,
+    readonly tour: OnboardingTourService,
   ) {}
 
   ngOnInit(): void {

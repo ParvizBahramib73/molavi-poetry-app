@@ -116,7 +116,7 @@ describe('FirstRunTourComponent (Persian first-use guide)', () => {
 
     (dialog.querySelector('.tour__close') as HTMLButtonElement).click();
     fixture.detectChanges();
-    await Promise.resolve();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
     expect(document.activeElement).toBe(trigger);
   });

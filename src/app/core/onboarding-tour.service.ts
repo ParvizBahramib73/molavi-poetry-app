@@ -56,6 +56,9 @@ export class OnboardingTourService {
 
   private promptedThisSession = false;
 
+  /** Element that initiated the guide (for restoring keyboard focus). */
+  focusOrigin: HTMLElement | null = null;
+
   startIfFirstVisit(): void {
     if (this.promptedThisSession || this.hasSeenTour()) {
       return;
@@ -97,6 +100,8 @@ export class OnboardingTourService {
   }
 
   private openAtStart(): void {
+    this.focusOrigin = typeof document !== 'undefined' &&
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.stepIndex.set(0);
     this.isOpen.set(true);
   }

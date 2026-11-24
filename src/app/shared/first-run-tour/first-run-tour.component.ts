@@ -278,9 +278,8 @@ export class FirstRunTourComponent implements AfterViewChecked {
     }
 
     if (!this.focusedPanel && this.panel) {
-      this.previousFocus = document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+      this.previousFocus = this.tour.focusOrigin ??
+        (document.activeElement instanceof HTMLElement ? document.activeElement : null);
       this.panel.nativeElement.focus({ preventScroll: true });
       this.focusedPanel = true;
     }
@@ -301,13 +300,13 @@ export class FirstRunTourComponent implements AfterViewChecked {
     this.previousFocus = null;
     // Return keyboard focus to the replay button, or to the first main route
     // after an automatically opened first-run tour.
-    queueMicrotask(() => {
+    setTimeout(() => {
       if (previous?.isConnected && previous !== document.body) {
         previous.focus();
       } else {
         document.querySelector<HTMLElement>('.shell__nav-link')?.focus();
       }
-    });
+    }, 0);
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -333,7 +332,10 @@ export class FirstRunTourComponent implements AfterViewChecked {
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     const active = document.activeElement;
-    if (!this.panel.nativeElement.contains(active)) {
+    if (active === this.panel.nativeElement) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (!this.panel.nativeElement.contains(active)) {
       event.preventDefault();
       first.focus();
     } else if (event.shiftKey && active === first) {
