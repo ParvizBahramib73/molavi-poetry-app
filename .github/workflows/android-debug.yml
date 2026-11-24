@@ -53,7 +53,7 @@ jobs:
         run: npm ci
 
       - name: Apply patched runtime dependency versions
-        run: npm audit fix --omit=dev --no-fund
+        run: npm audit fix --no-fund
 
       # The first APK pilot is isolated from the web project's lockfile.
       # These three native packages are pinned to the SAME Capacitor release.

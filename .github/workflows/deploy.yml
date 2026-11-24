@@ -39,7 +39,7 @@ jobs:
         run: npm install --no-save --no-package-lock @capacitor/app@8.0.0
 
       - name: Apply patched runtime dependency versions
-        run: npm audit fix --omit=dev --no-fund
+        run: npm audit fix --no-fund
 
       - name: Persist patched lockfile on the pull request branch
         if: github.event_name == 'pull_request'
@@ -76,7 +76,7 @@ jobs:
         run: npm ci
 
       - name: Apply patched runtime dependency versions
-        run: npm audit fix --omit=dev --no-fund
+        run: npm audit fix --no-fund
 
       - name: Install pinned icon renderer and native back-button bridge
         run: npm install --no-save --no-package-lock sharp@0.34.3 @capacitor/app@8.0.0
