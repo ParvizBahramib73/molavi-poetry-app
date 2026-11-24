@@ -36,8 +36,16 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # GitHub's ubuntu-24.04 runner already includes the Android SDK.
+      # The setup-android v3 action currently tries to install a retired
+      # sdkmanager "tools" package and fails before the build.
+      - name: Verify preinstalled Android SDK
+        run: |
+          test -d "${ANDROID_HOME}"
+          echo "Using Android SDK at ${ANDROID_HOME}"
+          ls "${ANDROID_HOME}/platforms" || true
+          command -v sdkmanager
+          sdkmanager --version
 
       - name: Install existing Angular dependencies
         run: npm ci
