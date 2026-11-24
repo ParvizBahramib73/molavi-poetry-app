@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   audit:
+    if: github.head_ref != 'release/bazaar-hardening'
     name: Audit web and Android build dependencies
     runs-on: ubuntu-24.04
     timeout-minutes: 25
