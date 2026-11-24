@@ -8,9 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: molavi-pages
@@ -34,23 +32,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Generate patched Angular and Capacitor lockfile, then install
-        run: |
-          npm install --package-lock-only --force --save-exact --no-audit --no-fund @angular/common@20.3.35 @angular/compiler@20.3.35 @angular/core@20.3.35 @angular/forms@20.3.35 @angular/platform-browser@20.3.35 @angular/router@20.3.35 @capacitor/core@8.0.0 @capacitor/app@8.0.0
-          npm install --package-lock-only --force --save-dev --save-exact --no-audit --no-fund @angular/build@20.3.35 @angular/cli@20.3.35 @angular/compiler-cli@20.3.35
-          npm ci
-
-      - name: Persist patched dependency lockfile on the pull request branch
-        if: github.event_name == 'pull_request'
-        run: |
-          if ! git diff --quiet -- package.json package-lock.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package.json package-lock.json
-            git commit -m "chore(security): patch Angular and add Capacitor App bridge"
-            git push origin "HEAD:refs/heads/${GITHUB_HEAD_REF}"
-          fi
 
       - name: Run dependency security audit
         run: npm audit --omit=dev --audit-level=high
@@ -76,12 +57,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Install patched Angular and Capacitor dependencies
-        run: |
-          npm install --package-lock-only --force --save-exact --no-audit --no-fund @angular/common@20.3.35 @angular/compiler@20.3.35 @angular/core@20.3.35 @angular/forms@20.3.35 @angular/platform-browser@20.3.35 @angular/router@20.3.35 @capacitor/core@8.0.0 @capacitor/app@8.0.0
-          npm install --package-lock-only --force --save-dev --save-exact --no-audit --no-fund @angular/build@20.3.35 @angular/cli@20.3.35 @angular/compiler-cli@20.3.35
-          npm ci
 
       - name: Install pinned icon renderer and native back-button bridge
         run: npm install --no-save --no-package-lock sharp@0.34.3
@@ -114,6 +89,10 @@ jobs:
     needs: build
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
