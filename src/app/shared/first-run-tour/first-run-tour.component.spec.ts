@@ -126,7 +126,7 @@ describe('FirstRunTourComponent (Persian first-use guide)', () => {
     tour.replay();
     fixture.detectChanges();
 
-    const buttons = fixture.nativeElement.querySelectorAll<HTMLButtonElement>('.tour__actions button');
+    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.tour__actions button');
     expect(buttons.length).toBe(2);
     for (const button of buttons) {
       expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
