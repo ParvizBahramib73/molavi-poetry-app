@@ -1454,13 +1454,14 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   }
 
   @HostListener('window:beshno:back', ['$event'])
-  onNativeBack(event: CustomEvent<{ handled: boolean }>): void {
+  onNativeBack(event: Event): void {
+    const backEvent = event as CustomEvent<{ handled: boolean }>;
     this.saveListeningProgress(true);
     if (this.pickerOpen || this.recSheetOpen || this.completionPromptOpen) {
       this.pickerOpen = false;
       this.recSheetOpen = false;
       this.completionPromptOpen = false;
-      event.detail.handled = true;
+      backEvent.detail.handled = true;
       this.cdr.markForCheck();
     }
   }

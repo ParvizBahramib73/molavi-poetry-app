@@ -260,7 +260,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  @HostListener('window:offline')
   private async registerNativeBackButton(): Promise<void> {
     const bridge = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
     if (!bridge?.isNativePlatform?.()) return;
@@ -281,6 +280,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     // At the player home, stay in the app instead of exiting.
   }
 
+  @HostListener('window:offline')
   onOffline(): void {
     this.isOnline = false;
     this.cdr.markForCheck();
