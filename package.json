@@ -23,22 +23,22 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/common": "20.3.35",
-    "@angular/compiler": "20.3.35",
-    "@angular/core": "20.3.35",
-    "@angular/forms": "20.3.35",
-    "@angular/platform-browser": "20.3.35",
-    "@angular/router": "20.3.35",
-    "@capacitor/app": "8.0.0",
-    "@capacitor/core": "8.0.0",
+    "@angular/common": "20.3.43",
+    "@angular/compiler": "20.3.43",
+    "@angular/core": "20.3.43",
+    "@angular/forms": "20.3.43",
+    "@angular/platform-browser": "20.3.43",
+    "@angular/router": "20.3.43",
+    "@capacitor/app": "8.6.2",
+    "@capacitor/core": "8.6.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular/build": "20.3.35",
-    "@angular/cli": "20.3.35",
-    "@angular/compiler-cli": "20.3.35",
+    "@angular/build": "20.3.43",
+    "@angular/cli": "20.3.43",
+    "@angular/compiler-cli": "20.3.43",
     "@types/jasmine": "~5.1.0",
     "fast-check": "^4.8.0",
     "jasmine-core": "~5.9.0",
@@ -47,6 +47,10 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/assets": "4.0.0",
+    "sharp": "0.35.5"
   }
 }
