@@ -38,9 +38,14 @@ for (const [label, path] of reports) {
     });
     const references = via.join('; ') || 'No advisory detail supplied';
     const cves = [...new Set(references.match(/CVE-\d{4}-\d{4,}/g) ?? [])].join(', ') || 'not listed in npm audit output';
+    const installed = (item.nodes ?? []).map((node) => {
+      const version = report.packages && report.packages[node] && report.packages[node].version;
+      return version ? node + '@' + version : node;
+    });
     sections.push(
       '- **' + name + '** — ' + (item.severity ?? 'unknown') + '; ' + (item.isDirect ? 'direct' : 'transitive') + '; affected range: ' + (item.range ?? 'not listed'),
-      '  - Installed paths: ' + ((item.nodes ?? []).join(', ') || 'not listed'),
+      '  - Installed versions/paths: ' + (installed.join(', ') || 'not listed'),
+      '  - Affected dependents: ' + ((item.effects ?? []).join(', ') || 'none listed'),
       '  - CVE: ' + cves,
       '  - Advisory: ' + references,
       '  - Remediation: ' + formatFix(item.fixAvailable)
