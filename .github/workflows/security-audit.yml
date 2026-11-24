@@ -63,7 +63,9 @@ jobs:
 
       - name: Summarize audit evidence
         if: always()
-        run: node scripts/summarize-security-audit.mjs
+        run: |
+          mkdir -p security-audit
+          node scripts/summarize-security-audit.mjs
 
       - name: Upload raw audit evidence
         if: always()
