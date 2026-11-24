@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   debug-apk:
+    if: github.head_ref != 'release/bazaar-hardening'
     name: Build installable Android test APK
     runs-on: ubuntu-24.04
     timeout-minutes: 35
