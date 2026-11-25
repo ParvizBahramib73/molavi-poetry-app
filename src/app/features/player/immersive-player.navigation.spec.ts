@@ -125,6 +125,89 @@ describe('ImmersivePlayerComponent — استوری‌وار (پیش‌فرض/خ
     expect(audioEl.getAttribute('src')).toBe(recB.mp3Url);
   });
 
+  it('خوانندهٔ انتخاب‌شده را در شعر بعدی حتی با تغییر اندیس خوانش حفظ می‌کند', () => {
+    const sameSingerAtNewIndex: Recitation = {
+      id: 3,
+      audioTitle: 'خوانش تازه',
+      audioArtist: '  استاد دوم  ',
+      mp3Url: 'https://example.com/next-same-singer.mp3',
+    };
+    const otherSinger: Recitation = {
+      id: 4,
+      audioTitle: 'خوانش سوم',
+      audioArtist: 'استاد سوم',
+      mp3Url: 'https://example.com/third-singer.mp3',
+    };
+
+    ganjoorSpy.getPoem.and.callFake((id: number) => {
+      if (id === 8) return of(makePoem());
+      if (id === 9) return of(makePoem({ id, recitations: [sameSingerAtNewIndex, otherSinger] }));
+      return of(makePoem({ id, recitations: [otherSinger, sameSingerAtNewIndex] }));
+    });
+
+    component.id = '8';
+    fixture.detectChanges();
+    component.selectRecitation(recB);
+
+    expect(localStorage.getItem('beshno:preferred-recitation-artist:v1')).toBe('استاد دوم');
+
+    // The preferred singer is now at index 0, not the previously selected index 1.
+    component.id = '9';
+    fixture.detectChanges();
+    expect(component.recitation?.id).toBe(3);
+    expect(component.recitation?.audioArtist).toBe('  استاد دوم  ');
+  });
+
+  it('وقتی خوانندهٔ ترجیحی در شعر نیست fallback پخش می‌کند و ترجیح را برای شعرهای بعدی نگه می‌دارد', () => {
+    const sameSingerAgain: Recitation = {
+      id: 5,
+      audioTitle: 'خوانش استاد دوم',
+      audioArtist: 'استاد دوم',
+      mp3Url: 'https://example.com/returning-singer.mp3',
+    };
+    const otherSinger: Recitation = {
+      id: 6,
+      audioTitle: 'خوانش جایگزین',
+      audioArtist: 'استاد سوم',
+      mp3Url: 'https://example.com/fallback-singer.mp3',
+    };
+
+    ganjoorSpy.getPoem.and.callFake((id: number) => {
+      if (id === 8) return of(makePoem());
+      if (id === 9) return of(makePoem({ id, recitations: [recA] }));
+      return of(makePoem({ id, recitations: [otherSinger, sameSingerAgain] }));
+    });
+
+    component.id = '8';
+    fixture.detectChanges();
+    component.selectRecitation(recB);
+
+    component.id = '9';
+    fixture.detectChanges();
+    expect(component.recitation).toEqual(recA);
+    expect(localStorage.getItem('beshno:preferred-recitation-artist:v1')).toBe('استاد دوم');
+
+    component.id = '10';
+    fixture.detectChanges();
+    expect(component.recitation).toEqual(sameSingerAgain);
+  });
+
+  it('ترجیح خوانندهٔ دستی را پس از ساخت دوبارهٔ پخش‌کننده بازیابی می‌کند', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+    component.selectRecitation(recB);
+    fixture.destroy();
+
+    fixture = TestBed.createComponent(ImmersivePlayerComponent);
+    component = fixture.componentInstance;
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem({ recitations: [recA, recB] })));
+    component.id = '8';
+    fixture.detectChanges();
+
+    expect(component.recitation?.audioArtist).toBe('استاد دوم');
+  });
+
   it('سوایپ/شِوْرون به شعر بعدی، با شناسهٔ مجاورِ بعدی ناوبری می‌کند', () => {
     ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
     component.id = '8';
