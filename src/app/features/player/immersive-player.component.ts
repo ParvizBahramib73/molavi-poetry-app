@@ -1370,6 +1370,7 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   private lastProgressSavedAt = -1;
   private hasExplicitResumeInput = false;
   private hasExplicitRecitationInput = false;
+  private pendingAutoPlay = false;
 
   @ViewChild('audio') audioRef?: ElementRef<HTMLAudioElement>;
   @ViewChild('lyrics') lyricsRef?: ElementRef<HTMLElement>;
@@ -1380,7 +1381,11 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly library: PoetryLibraryService,
     private readonly cdr: ChangeDetectorRef,
-  ) {}
+  ) {
+    // Navigation state survives both route reuse and a fresh component instance.
+    this.pendingAutoPlay =
+      this.router.getCurrentNavigation()?.extras.state?.['beshnoAutoPlay'] === true;
+  }
 
   /** شناسهٔ شعر از پارامتر مسیر `poem/:id/listen`. */
   @Input()
@@ -1504,7 +1509,7 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
       return;
     }
     const candidate = this.library.favorites().find((item) => item.id !== this.poem?.id);
-    if (candidate) void this.router.navigate(['/poem', candidate.id, 'listen']);
+    if (candidate) this.navigateToPoemAndPlay(candidate.id);
     else this.actionFeedback = 'شعر بعدی در دسترس نیست.';
     this.cdr.markForCheck();
   }
@@ -1539,7 +1544,7 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
     const available = [...choices.values()];
     if (available.length > 0) {
       const chosen = available[Math.floor(Math.random() * available.length)];
-      void this.router.navigate(['/poem', chosen.id, 'listen']);
+      this.navigateToPoemAndPlay(chosen.id);
     } else if (this.poem?.nextPoem?.id) {
       this.goNextPoem();
     } else {
@@ -1594,15 +1599,30 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   goNextPoem(): void {
     const next = this.poem?.nextPoem;
     if (next && next.id > 0) {
-      void this.router.navigate(['/poem', next.id, 'listen']);
+      this.navigateToPoemAndPlay(next.id);
     }
+  }
+
+  /** Navigate to another poem and carry a one-shot autoplay intent across routing. */
+  private navigateToPoemAndPlay(poemId: number): void {
+    if (!Number.isInteger(poemId) || poemId <= 0) return;
+
+    this.pendingAutoPlay = true;
+    void this.router
+      .navigate(['/poem', poemId, 'listen'], { state: { beshnoAutoPlay: true } })
+      .then((navigated) => {
+        if (!navigated) this.pendingAutoPlay = false;
+      })
+      .catch(() => {
+        this.pendingAutoPlay = false;
+      });
   }
 
   /** رفتن به شعر پیشین (در صورت وجود مجاورت). */
   goPrevPoem(): void {
     const prev = this.poem?.prevPoem;
     if (prev && prev.id > 0) {
-      void this.router.navigate(['/poem', prev.id, 'listen']);
+      this.navigateToPoemAndPlay(prev.id);
     }
   }
 
@@ -1775,6 +1795,22 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
     // اعمال سرعت پخش انتخابی بر عنصر صوت.
     if (el) {
       el.playbackRate = this.playbackRate;
+    }
+    if (this.pendingAutoPlay && this.recitation && el) {
+      this.pendingAutoPlay = false;
+      try {
+        const playResult = el.play();
+        if (playResult && typeof playResult.catch === 'function') {
+          void playResult.catch(() => {
+            this.playbackError =
+              'پخش خودکار شعر بعدی شروع نشد. برای ادامه، دکمه پخش را لمس کن.';
+            this.cdr.markForCheck();
+          });
+        }
+      } catch {
+        this.playbackError =
+          'پخش خودکار شعر بعدی شروع نشد. برای ادامه، دکمه پخش را لمس کن.';
+      }
     }
     this.scheduleFocal();
     this.cdr.markForCheck();
@@ -2118,6 +2154,7 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
       (v) => (v.text ?? '').trim().length > 0,
     );
     this.recitation = this.pickRecitation(poem.recitations);
+    if (!this.recitation) this.pendingAutoPlay = false;
     if (this.recitation) {
       this.recIndex = Math.max(0, poem.recitations.indexOf(this.recitation));
     }
