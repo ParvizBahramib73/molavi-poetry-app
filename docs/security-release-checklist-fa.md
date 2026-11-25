@@ -37,10 +37,14 @@
 - Angular framework (`common`، `compiler`، `core`، `forms`، `platform-browser`، `router` و `compiler-cli`): `20.3.35`؛ ابزارهای `@angular/build` و `@angular/cli`: `20.3.43`.
 - Capacitor: `core`، `android` و `cli` روی `8.6.2` و افزونهٔ `app` روی نسخهٔ منتشرشدهٔ `8.1.2` پین شده‌اند.
 - ابزارهای asset: `@capacitor/assets@4.0.0` و `sharp@0.35.5` پین شده‌اند.
-- نسخهٔ اولیهٔ Android روی `versionName=1.0.0` و `versionCode=1` تنظیم شده است؛ برای هر انتشار بعدی `versionCode` باید افزایش یابد.
+- نسخهٔ انتقالی Android روی `versionName=1.0.1` تنظیم می‌شود و `versionCode` از تعداد commitهای تاریخچهٔ کامل شاخهٔ `main` محاسبه می‌شود؛ checkout انتشار باید `fetch-depth: 0` داشته باشد.
 - lockfile باید فقط با `npm install --package-lock-only` و `npm audit fix --package-lock-only` بدون `--force` بازتولید و سپس با `npm ci` اعتبارسنجی شود.
 
 ## امضای امن Android Release
+
+- APKهای Debug فقط برای CI هستند و به‌عنوان نسخهٔ قابل به‌روزرسانی منتشر نمی‌شوند؛ APKهای قابل نصب و ارتقا باید با keystore دائمی Release امضا شوند.
+- علت تعارض نسخه‌های Debug قبلی و راهنمای مهاجرت یک‌باره در `docs/android-update-signing-fa.md` آمده است.
+
 
 برای تولید APK/AAB امضاشده، keystore باید توسط مالک برنامه ساخته و در GitHub Repository Settings → Secrets and variables → Actions ثبت شود. هرگز فایل keystore یا رمزهای آن را در مخزن، Issue، Pull Request یا چت قرار ندهید.
 

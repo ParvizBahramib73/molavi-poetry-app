@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -58,11 +60,21 @@ jobs:
       - name: Build web assets for Android
         run: npm run build -- --configuration=production --base-href=/
 
-      - name: Generate Android project
+      - name: Generate Android project with upgrade-safe version metadata
+        shell: bash
         run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Signed releases must be built from main so versionCode stays monotonic."
+            exit 1
+          fi
           npx cap add android
           npx cap sync android
-          ANDROID_VERSION_CODE=1 ANDROID_VERSION_NAME=1.0.0 node scripts/set-android-version.mjs
+          VERSION_CODE=$(git rev-list --count HEAD)
+          if [ "$VERSION_CODE" -lt 2 ]; then VERSION_CODE=2; fi
+          echo "Building versionName=1.0.1 versionCode=$VERSION_CODE"
+          ANDROID_VERSION_CODE="$VERSION_CODE" ANDROID_VERSION_NAME=1.0.1 node scripts/set-android-version.mjs
+          grep -q "versionCode $VERSION_CODE" android/app/build.gradle
+          grep -q 'versionName "1.0.1"' android/app/build.gradle
           node scripts/harden-android-project.mjs
           npx capacitor-assets generate --android
           grep -q 'android:usesCleartextTraffic="false"' android/app/src/main/AndroidManifest.xml
