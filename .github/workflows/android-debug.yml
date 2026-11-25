@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   debug-apk:
-    name: Build installable Android test APK
+    name: Build Android debug variant (CI only)
     runs-on: ubuntu-24.04
     timeout-minutes: 35
 
