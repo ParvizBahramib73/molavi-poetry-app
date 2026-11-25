@@ -1401,6 +1401,14 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
     private readonly library: PoetryLibraryService,
     private readonly cdr: ChangeDetectorRef,
   ) {
+    // Read persistent user choices before Angular applies route-bound inputs.
+    try {
+      const preferredArtist = localStorage.getItem(PREFERRED_RECITATION_STORAGE_KEY);
+      this.preferredRecitationArtist = normalizeRecitationArtist(preferredArtist) || null;
+    } catch {
+      this.preferredRecitationArtist = null;
+    }
+
     // Navigation state survives both route reuse and a fresh component instance.
     this.pendingAutoPlay =
       this.router.getCurrentNavigation()?.extras.state?.['beshnoAutoPlay'] === true;
@@ -1460,12 +1468,6 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
    * «بشنو از نی» را با URL بارگذاری می‌کند.
    */
   ngOnInit(): void {
-    try {
-      const preferredArtist = localStorage.getItem(PREFERRED_RECITATION_STORAGE_KEY);
-      this.preferredRecitationArtist = normalizeRecitationArtist(preferredArtist) || null;
-    } catch {
-      this.preferredRecitationArtist = null;
-    }
     try {
       this.textLarge = localStorage.getItem('molavi.reading.textSize') === 'large';
     } catch {
