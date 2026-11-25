@@ -38,6 +38,22 @@ const DEFAULT_POEM_URL = '/moulavi/masnavi/daftar1/sh1';
 /** کمینهٔ جابه‌جایی افقی (پیکسل) برای تشخیص سوایپ بین اشعار. */
 const SWIPE_THRESHOLD = 60;
 
+/** صدای خواننده‌ای که کاربر دستی انتخاب کرده، بین اشعار و نشست‌ها حفظ می‌شود. */
+const PREFERRED_RECITATION_STORAGE_KEY = 'beshno:preferred-recitation-artist:v1';
+
+/** کلید مقایسهٔ پایدار برای نام خواننده، مستقل از فاصله و شکل نویسه‌های فارسی/عربی. */
+function normalizeRecitationArtist(value: string | null | undefined): string {
+  return (value ?? '')
+    .normalize('NFKC')
+    .replace(/[\u200c\u200f\u202a-\u202e]/g, '')
+    .replace(/[\u064b-\u065f\u0670]/g, '')
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase();
+}
+
 /**
  * نمای «شنیدن همگام با متن» (Immersive_Player) — تجربهٔ اصلی و همیشه‌دیدهٔ برنامه.
  *
@@ -1352,6 +1368,9 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
   /** اندیس خوانش انتخابی (از ورودی اختیاری مسیر). */
   private recIndex = 0;
 
+  /** نام نرمال‌شدهٔ خواننده‌ای که کاربر صراحتاً انتخاب کرده است. */
+  private preferredRecitationArtist: string | null = null;
+
   /** شناسهٔ عددی شعر جاری برای تلاش مجدد (null یعنی شعر پیش‌فرض خانه). */
   private currentPoemId: number | null = null;
 
@@ -1382,6 +1401,14 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
     private readonly library: PoetryLibraryService,
     private readonly cdr: ChangeDetectorRef,
   ) {
+    // Read persistent user choices before Angular applies route-bound inputs.
+    try {
+      const preferredArtist = localStorage.getItem(PREFERRED_RECITATION_STORAGE_KEY);
+      this.preferredRecitationArtist = normalizeRecitationArtist(preferredArtist) || null;
+    } catch {
+      this.preferredRecitationArtist = null;
+    }
+
     // Navigation state survives both route reuse and a fresh component instance.
     this.pendingAutoPlay =
       this.router.getCurrentNavigation()?.extras.state?.['beshnoAutoPlay'] === true;
@@ -1731,6 +1758,7 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
     const index = list.indexOf(rec);
     this.recIndex = index >= 0 ? index : 0;
     this.recitation = rec;
+    this.rememberPreferredRecitation(rec);
     this.recSheetOpen = false;
 
     // بازنشانی وضعیت پخش برای خوانش جدید.
@@ -2201,12 +2229,37 @@ export class ImmersivePlayerComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  /** انتخاب خوانش: اندیس درخواستی در صورت اعتبار، وگرنه نخستین خوانش معتبر. */
+  /** ذخیرهٔ ترجیح خواننده فقط هنگام انتخاب دستی کاربر؛ fallback آن را بازنویسی نمی‌کند. */
+  private rememberPreferredRecitation(recitation: Recitation): void {
+    const artist = normalizeRecitationArtist(recitation.audioArtist);
+    this.preferredRecitationArtist = artist || null;
+    try {
+      if (artist) {
+        localStorage.setItem(PREFERRED_RECITATION_STORAGE_KEY, artist);
+      } else {
+        localStorage.removeItem(PREFERRED_RECITATION_STORAGE_KEY);
+      }
+    } catch {
+      // Keep the preference in memory for this session when storage is unavailable.
+    }
+  }
+
+  /** انتخاب خوانش: اولویت با خوانندهٔ انتخاب‌شدهٔ کاربر، سپس اندیس درخواستی و در نهایت اولین مورد. */
   private pickRecitation(recitations: Recitation[]): Recitation | null {
     if (!recitations || recitations.length === 0) {
       return null;
     }
-    if (this.recIndex < recitations.length) {
+
+    // An explicit route input is intentional (for example, a deep link); otherwise
+    // preserve the user's manually selected singer across poem changes and sessions.
+    if (!this.hasExplicitRecitationInput && this.preferredRecitationArtist) {
+      const preferred = recitations.find(
+        (item) => normalizeRecitationArtist(item.audioArtist) === this.preferredRecitationArtist,
+      );
+      if (preferred) return preferred;
+    }
+
+    if (this.recIndex >= 0 && this.recIndex < recitations.length) {
       return recitations[this.recIndex];
     }
     return recitations[0];
