@@ -134,10 +134,10 @@ describe('ImmersivePlayerComponent — استوری‌وار (پیش‌فرض/خ
     const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
 
     component.goNextPoem();
-    expect(navSpy).toHaveBeenCalledWith(['/poem', 9, 'listen']);
+    expect(navSpy).toHaveBeenCalledWith(['/poem', 9, 'listen'], { state: { beshnoAutoPlay: true } });
 
     component.goPrevPoem();
-    expect(navSpy).toHaveBeenCalledWith(['/poem', 7, 'listen']);
+    expect(navSpy).toHaveBeenCalledWith(['/poem', 7, 'listen'], { state: { beshnoAutoPlay: true } });
   });
 
   it('وقتی مجاورت وجود ندارد، سوایپ ناوبری نمی‌کند', () => {
@@ -166,7 +166,7 @@ describe('ImmersivePlayerComponent — استوری‌وار (پیش‌فرض/خ
     component.onPointerDown({ clientX: 300, clientY: 200 } as PointerEvent);
     component.onPointerUp({ clientX: 200, clientY: 205 } as PointerEvent);
 
-    expect(navSpy).toHaveBeenCalledWith(['/poem', 9, 'listen']);
+    expect(navSpy).toHaveBeenCalledWith(['/poem', 9, 'listen'], { state: { beshnoAutoPlay: true } });
   });
 
   it('با داده‌ی همگام‌سازیِ دقیق، زمان‌بندی از sync ساخته می‌شود و تخمین آن را بازنویسی نمی‌کند', () => {

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ElementRef } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { GanjoorService } from '../../core/ganjoor.service';
@@ -391,6 +391,53 @@ describe('ImmersivePlayerComponent', () => {
 
     expect(detail.handled).toBeTrue();
     expect(component.pickerOpen).toBeFalse();
+  });
+
+  it('automatically starts the next poem after its audio metadata loads', () => {
+    ganjoorSpy.getPoem.and.returnValue(
+      of(makePoem({ nextPoem: { id: 9, title: 'شعر بعدی' } })),
+    );
+    component.id = '8';
+    fixture.detectChanges();
+
+    const router = TestBed.inject(Router);
+    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+    const play = jasmine.createSpy('play').and.returnValue(Promise.resolve());
+    component.audioRef = new ElementRef({
+      ...fakeAudio(),
+      play,
+    } as HTMLAudioElement);
+
+    component.onCompletionBehaviorChange({
+      target: { value: 'next' },
+    } as unknown as Event);
+    component.onEnded();
+
+    expect(navigate).toHaveBeenCalledOnceWith(
+      ['/poem', 9, 'listen'],
+      { state: { beshnoAutoPlay: true } },
+    );
+
+    component.onLoadedMetadata();
+
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(component.completionPromptOpen).toBeFalse();
+  });
+
+  it('does not autoplay the first poem without a next-poem navigation intent', () => {
+    ganjoorSpy.getPoem.and.returnValue(of(makePoem()));
+    component.id = '8';
+    fixture.detectChanges();
+
+    const play = jasmine.createSpy('play').and.returnValue(Promise.resolve());
+    component.audioRef = new ElementRef({
+      ...fakeAudio(),
+      play,
+    } as HTMLAudioElement);
+
+    component.onLoadedMetadata();
+
+    expect(play).not.toHaveBeenCalled();
   });
 
   it('asks what to do after a poem ends by default', () => {

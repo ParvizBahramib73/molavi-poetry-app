@@ -1,0 +1,51 @@
+name: Player Regression CI
+
+on:
+  push:
+    branches: [main, fix/player-auto-advance-autoplay]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: player-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Unit tests and production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Run unit and regression tests
+        run: npm run test:ci -- --no-progress
+
+      - name: Generate brand assets
+        run: node scripts/generate-brand-assets.mjs
+
+      - name: Build production web app
+        run: npm run build -- --configuration=production --base-href=/molavi-poetry-app/
+
+      - name: Verify production output
+        run: |
+          test -s dist/molavi-poetry-app/browser/index.html
+          test -s dist/molavi-poetry-app/browser/manifest.webmanifest
+          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-192.png
+          test -s dist/molavi-poetry-app/browser/icons/beshno-bekhan-512.png
